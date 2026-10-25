@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>予定表メーカー</title>
+<meta name="description" content="大きな字の週間予定表を作って印刷したり、リンクで家族に送ったりできます。データはリンクの中だけに入り、どこにも保存されません。">
+<meta name="theme-color" content="#1d5a6e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
+<style>
+/* 台所の壁に貼る紙のカレンダー。画面は「作る道具」、印刷は「貼る紙」。曜日の色は日本のカレンダーの決まり（土＝青、日＝赤）に合わせる */
+:root{
+  --paper:#ffffff;
+  --desk:#eef2f3;
+  --ink:#1b2629;
+  --muted:#5b6b70;
+  --line:#c9d4d7;
+  --accent:#1d5a6e;
+  --accent-ink:#ffffff;
+  --soft:#e3eef1;
+  --sat:#1f5fbf;
+  --sun:#c8322b;
+  --warn-bg:#fff4d6;
+  --warn-ink:#6b4a00;
+  --k-helper:#1f6fb2; --k-day:#2c8a4b; --k-clinic:#c8322b; --k-family:#c56a12; --k-med:#7a4bb0; --k-trash:#5e6b70; --k-other:#3f5258;
+  --font:"BIZ UDPGothic","BIZ UDゴシック","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1c2427; --desk:#121819; --ink:#e8eef0; --muted:#9db0b5; --line:#34444a;
+    --accent:#6fb6cc; --accent-ink:#0d1a1e; --soft:#22333a; --sat:#7fb0ff; --sun:#ff8a80;
+    --warn-bg:#3a2f12; --warn-ink:#ffdf8a;
+    --k-helper:#6aa8e6; --k-day:#6cc48a; --k-clinic:#ff8a80; --k-family:#f0a65c; --k-med:#b896e8; --k-trash:#a3b1b5; --k-other:#b0c0c4;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1c2427; --desk:#121819; --ink:#e8eef0; --muted:#9db0b5; --line:#34444a;
+  --accent:#6fb6cc; --accent-ink:#0d1a1e; --soft:#22333a; --sat:#7fb0ff; --sun:#ff8a80;
+  --warn-bg:#3a2f12; --warn-ink:#ffdf8a;
+  --k-helper:#6aa8e6; --k-day:#6cc48a; --k-clinic:#ff8a80; --k-family:#f0a65c; --k-med:#b896e8; --k-trash:#a3b1b5; --k-other:#b0c0c4;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--desk);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---- 上の帯 ---- */
+.bar{background:var(--accent);color:var(--accent-ink)}
+.bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding-block:12px}
+.bar h1{margin:0;font-size:22px;letter-spacing:.04em;margin-right:auto}
+.tabs{display:flex;gap:4px;background:rgba(0,0,0,.18);padding:4px;border-radius:999px}
+.tabs button{border:0;background:transparent;color:inherit;padding:6px 16px;border-radius:999px;font-weight:700;font-size:15px}
+.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink)}
+
+main .wrap{padding-block:20px 48px;display:grid;gap:20px}
+.note{background:var(--warn-bg);color:var(--warn-ink);border-radius:10px;padding:10px 14px;font-size:15px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.note button{border:1px solid currentColor;background:transparent;border-radius:8px;padding:4px 12px;font-weight:700}
+
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:16px;min-width:0}
+.panel h2{margin:0;font-size:18px}
+.panel p.hint{margin:0;color:var(--muted);font-size:14px}
+label.f{display:grid;gap:4px;font-size:14px;color:var(--muted);font-weight:700}
+label.f input,label.f textarea,label.f select{font-size:17px;color:var(--ink);font-weight:400}
+input[type=text],input[type=date],textarea,select{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
+textarea{resize:vertical}
+.row2{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+@media (max-width:640px){.row2{grid-template-columns:1fr}}
+
+/* ---- 予定の入力 ---- */
+.entries{display:grid;gap:10px}
+.entry{display:grid;grid-template-columns:156px 96px minmax(0,1fr) auto;gap:8px;align-items:start;padding:12px;border:1px solid var(--line);border-left:6px solid var(--kc,var(--k-other));border-radius:10px;background:var(--paper)}
+.entry .when{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.entry .del{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 10px;color:var(--muted)}
+.entry .del:hover{color:var(--sun);border-color:var(--sun)}
+.days{display:flex;gap:4px;flex-wrap:wrap}
+.days button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--paper);font-weight:700}
+.days button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.days button.sat:not([aria-pressed="true"]){color:var(--sat)}
+.days button.sun:not([aria-pressed="true"]){color:var(--sun)}
+.days .every{width:auto;padding:0 12px;border-radius:999px;font-size:14px}
+.entry .when select{width:auto}
+.entry .when input[type=date]{width:auto}
+@media (max-width:640px){
+  .entry{grid-template-columns:1fr 1fr}
+  .entry .x{grid-column:1/-1}
+  .entry .del{grid-column:2;grid-row:1;justify-self:end;width:auto}
+  .entry .kind{grid-column:1;grid-row:1}
+  .entry .time{grid-column:1/-1}
+}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:1px solid var(--accent);background:var(--paper);color:var(--accent);border-radius:10px;padding:10px 18px;font-weight:700;font-size:16px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.quiet{border-color:var(--line);color:var(--muted)}
+
+.share{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
+.share textarea{font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all;height:96px}
+.share .qrbox{width:160px;display:grid;gap:4px;text-align:center;font-size:12px;color:var(--muted)}
+.share .qrbox svg{width:160px;height:160px;background:#fff;border-radius:6px}
+@media (max-width:640px){.share{grid-template-columns:1fr}.share .qrbox{justify-self:center}}
+.status{min-height:1.6em;font-size:14px;color:var(--accent);font-weight:700}
+
+/* ---- 週の表（画面と印刷で共通の「紙」） ---- */
+.sheettools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.sheettools .spacer{flex:1}
+.sheettools select{width:auto}
+.scroller{overflow-x:auto;border-radius:6px}
+.sheet{background:#fff;color:#111;width:1060px;min-width:1060px;margin:0 auto;padding:22px 24px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 28px rgba(0,0,0,.08);display:grid;gap:12px;
+  --s:1;font-family:var(--font)}
+.sheet[data-size="l"]{--s:1.22}
+.sheet[data-size="xl"]{--s:1.4}
+.sheet.measure{padding:0!important;min-width:0!important;box-shadow:none}
+.sheet.measure .day{min-height:0!important}
+.sheet .head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end}
+.sheet .head h2{margin:0;font-size:calc(30px*var(--s));line-height:1.25;letter-spacing:.03em;text-wrap:balance}
+.sheet .head .range{font-size:calc(17px*var(--s));color:#444;font-weight:700}
+.sheet .qr{display:grid;gap:2px;justify-items:center;font-size:11px;color:#555;text-align:center;line-height:1.3}
+.sheet .qr svg{width:84px;height:84px}
+.grid7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:2px solid #222;border-radius:4px;overflow:hidden}
+.grid7.split{grid-template-columns:repeat(4,minmax(0,1fr))}
+.day{border-left:1px solid #999;display:grid;grid-template-rows:auto 1fr;min-height:calc(300px*var(--s));min-width:0}
+.grid7 .day:nth-child(7n+1){border-left:0}
+.grid7.split .day{border-left:1px solid #999;border-top:1px solid #999}
+.grid7.split .day:nth-child(4n+1){border-left:0}
+.grid7.split .day:nth-child(-n+4){border-top:0}
+.day .dh{display:flex;align-items:baseline;justify-content:center;gap:6px;padding:6px 4px;border-bottom:2px solid #222;background:#f0f3f4;font-weight:700}
+.day .dh .dw{font-size:calc(26px*var(--s))}
+.day .dh .dd{font-size:calc(16px*var(--s));color:#333}
+.day.sat .dh{background:#e6effc;color:#1f5fbf}
+.day.sun .dh{background:#fdeaea;color:#c8322b}
+.day.sat .dh .dd{color:#1f5fbf}.day.sun .dh .dd{color:#c8322b}
+.day.is-today .dh{outline:3px solid #222;outline-offset:-3px}
+.day ul{list-style:none;margin:0;padding:6px;display:grid;gap:6px;align-content:start}
+.day li{border-left:5px solid var(--c);padding:3px 6px 4px;background:color-mix(in srgb,var(--c) 9%,#fff);border-radius:3px;min-width:0}
+.day li .t{display:block;font-weight:700;font-size:calc(17px*var(--s));line-height:1.25;font-variant-numeric:tabular-nums}
+.day li .x{display:block;font-size:calc(16px*var(--s));line-height:1.35;overflow-wrap:anywhere}
+.day li .k{display:inline-block;font-size:calc(12px*var(--s));font-weight:700;color:var(--c);margin-right:4px}
+.day .none{color:#999;font-size:calc(14px*var(--s));padding:8px;text-align:center}
+.sheet .foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:2px solid #222;border-radius:4px;padding:8px 12px}
+.sheet .foot .c{font-size:calc(20px*var(--s));font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}
+.sheet .foot .c small{display:block;font-size:calc(13px*var(--s));color:#555;font-weight:700}
+.sheet .foot .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:#444;justify-content:flex-end}
+.sheet .legend span::before{content:"";display:inline-block;width:10px;height:10px;background:var(--c);margin-right:4px;vertical-align:-1px;border-radius:2px}
+
+/* 種類の色（紙は常に白なので、紙用の色は固定） */
+.sheet [data-k="h"]{--c:#1f6fb2}.sheet [data-k="d"]{--c:#2c8a4b}.sheet [data-k="c"]{--c:#c8322b}
+.sheet [data-k="f"]{--c:#c56a12}.sheet [data-k="m"]{--c:#7a4bb0}.sheet [data-k="g"]{--c:#5e6b70}.sheet [data-k="o"]{--c:#3f5258}
+
+/* ---- 今日 ---- */
+.today{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;gap:18px}
+.today .tnav{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.today .tnav .spacer{flex:1}
+.today .bigdate{font-size:clamp(34px,8vw,64px);font-weight:700;line-height:1.15;letter-spacing:.02em;text-wrap:balance}
+.today .bigdate .w.sat{color:var(--sat)}.today .bigdate .w.sun{color:var(--sun)}
+.today .clock{font-size:clamp(20px,4vw,30px);color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.tlist{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.tlist li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 18px;align-items:center;padding:14px 18px;border-radius:12px;border:2px solid var(--line);border-left:10px solid var(--kc)}
+.tlist .t{font-size:clamp(28px,6vw,48px);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;min-width:3.2em}
+.tlist .x{font-size:clamp(22px,4.6vw,36px);font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.tlist .k{display:block;font-size:clamp(14px,2.6vw,18px);color:var(--kc);font-weight:700}
+.tlist li.past{opacity:.45}
+.tlist li.next{border-color:var(--accent);border-left-color:var(--kc);background:var(--soft)}
+.tlist li.next .t::after{content:"つぎ";display:block;font-size:16px;color:var(--accent);letter-spacing:.1em}
+.today .empty{font-size:clamp(22px,4.6vw,34px);color:var(--muted);font-weight:700;padding:20px 0}
+.today .contact{border-top:2px solid var(--line);padding-top:14px;font-size:clamp(18px,3.6vw,26px);font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}
+.today .contact small{display:block;font-size:14px;color:var(--muted)}
+.kc-h{--kc:var(--k-helper)}.kc-d{--kc:var(--k-day)}.kc-c{--kc:var(--k-clinic)}.kc-f{--kc:var(--k-family)}.kc-m{--kc:var(--k-med)}.kc-g{--kc:var(--k-trash)}.kc-o{--kc:var(--k-other)}
+
+footer{color:var(--muted);font-size:13px}
+footer .wrap{padding-block:0 32px}
+
+/* ---- 印刷：紙だけを出す ---- */
+@page{size:A4 landscape;margin:8mm}
+@media print{
+  :root{color-scheme:light}
+  body{background:#fff;padding:0}
+  .bar,.note,.sheettools,#paneEdit,#paneToday,footer{display:none!important}
+  #paneWeek{display:block!important}
+  main .wrap{padding:0;max-width:none;display:block}
+  .scroller{overflow:visible}
+  .sheet{width:100%;min-width:0;box-shadow:none;padding:0;zoom:var(--fit,1);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .noprint{display:none!important}
+  .day{min-height:120mm}
+  .sheet[data-size="l"] .day{min-height:112mm}
+  .grid7.split .day{min-height:62mm}
+  .grid7.split .day li{padding:2px 5px}
+  .sheet[data-size="xl"] .head h2{font-size:30px}
+  .sheet[data-size="xl"] .qr svg{width:70px;height:70px}
+  .sheet[data-size="xl"]{gap:8px}
+}
+@media (prefers-reduced-motion:no-preference){.tabs button,.btn,.days button{transition:background .15s,color .15s}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <h1>予定表メーカー</h1>
+    <nav class="tabs" role="tablist" aria-label="画面の切り替え">
+      <button id="tabEdit" role="tab" aria-selected="true" aria-controls="paneEdit">作る</button>
+      <button id="tabWeek" role="tab" aria-selected="false" aria-controls="paneWeek">週の表</button>
+      <button id="tabToday" role="tab" aria-selected="false" aria-controls="paneToday">今日</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="note" id="exampleNote" hidden>
+      <span>いま表示しているのは<b>例</b>です。書きかえるか、まっさらにして始めてください。</span>
+      <button id="clearAll" type="button">まっさらにする</button>
+    </div>
+    <div class="note" id="sharedNote" hidden>
+      <span>送られてきたリンクの予定表を開いています。ここで直しても、送った人の予定表は変わりません。</span>
+    </div>
+
+    <!-- ===== 作る ===== -->
+    <section id="paneEdit" role="tabpanel" aria-labelledby="tabEdit" style="display:grid;gap:20px">
+      <div class="panel">
+        <div class="row2">
+          <label class="f">予定表の名前
+            <input id="fTitle" type="text" placeholder="例：〇〇さんの予定" maxlength="40">
+          </label>
+          <label class="f">何週目を表示するか
+            <select id="fWeek">
+              <option value="">開いたときの週（毎週くり返す予定向け）</option>
+            </select>
+          </label>
+        </div>
+        <label class="f">困ったときの連絡先（表の下に大きく出ます）
+          <textarea id="fContact" rows="2" maxlength="200" placeholder="例：ヘルパー事業所 098-000-0000　／　長男 090-0000-0000"></textarea>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h2>予定</h2>
+        <p class="hint">「毎週」はくり返す予定、「この日だけ」は1回きりの予定です。時刻は「10:00」のほかに「朝」「昼」「夕方」なども書けます。</p>
+        <div class="entries" id="entries"></div>
+        <div class="actions">
+          <button class="btn" type="button" id="addEntry">＋ 予定を足す</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>送る・残す</h2>
+        <p class="hint">予定はこのリンクの中にだけ入ります。サーバーにもこの端末の外にも保存されません。リンクを受け取った人は、開くだけで同じ表を見られます。</p>
+        <div class="actions">
+          <button class="btn primary" type="button" id="makeLink">送るためのリンクを作る</button>
+          <button class="btn" type="button" id="goPrint">印刷する</button>
+          <label class="f" style="grid-auto-flow:column;align-items:center;gap:8px;font-weight:400;color:var(--ink)">
+            <input type="checkbox" id="fOpenToday" style="width:20px;height:20px"> リンクを開いたら「今日」の画面にする（置いておくスマホ用）
+          </label>
+        </div>
+        <div class="share" id="shareBox" hidden>
+          <div style="display:grid;gap:8px;min-width:0">
+            <textarea id="shareUrl" readonly aria-label="作ったリンク"></textarea>
+            <div class="actions">
+              <button class="btn primary" type="button" id="copyLink">リンクをコピー</button>
+              <button class="btn" type="button" id="shareLink" hidden>LINEなどで送る</button>
+            </div>
+            <div class="status" id="shareStatus" role="status"></div>
+          </div>
+          <div class="qrbox"><div id="shareQr"></div><span>スマホのカメラで読むと<br>この予定表が開きます</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 週の表 ===== -->
+    <section id="paneWeek" role="tabpanel" aria-labelledby="tabWeek" hidden style="display:grid;gap:12px">
+      <div class="sheettools">
+        <button class="btn quiet" type="button" id="prevWeek">◀ 前の週</button>
+        <button class="btn quiet" type="button" id="thisWeek">今週</button>
+        <button class="btn quiet" type="button" id="nextWeek">次の週 ▶</button>
+        <span class="spacer"></span>
+        <label class="f" style="grid-auto-flow:column;align-items:center;gap:6px">文字
+          <select id="fSize">
+            <option value="m">ふつう</option>
+            <option value="l">大きい</option>
+            <option value="xl">特大（2段）</option>
+          </select>
+        </label>
+        <button class="btn primary" type="button" id="printBtn">印刷する</button>
+      </div>
+      <div class="scroller"><div class="sheet" id="sheet" data-size="m"></div></div>
+      <p class="hint noprint" style="margin:0;color:var(--muted);font-size:14px">A4横で印刷されます。右上のQRをスマホで読むと、この予定表が開きます。<b id="fitNote"></b></p>
+    </section>
+
+    <!-- ===== 今日 ===== -->
+    <section id="paneToday" role="tabpanel" aria-labelledby="tabToday" hidden>
+      <div class="today">
+        <div class="tnav">
+          <button class="btn quiet" type="button" id="prevDay">◀ 前の日</button>
+          <button class="btn quiet" type="button" id="toDay">今日</button>
+          <button class="btn quiet" type="button" id="nextDay">次の日 ▶</button>
+          <span class="spacer"></span>
+          <button class="btn" type="button" id="wakeBtn">画面を消さない</button>
+        </div>
+        <div>
+          <div class="bigdate" id="bigDate"></div>
+          <div class="clock" id="clock"></div>
+        </div>
+        <ul class="tlist" id="tlist"></ul>
+        <div class="contact" id="tContact" hidden></div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer><div class="wrap">ネットにつながっていなくても使えます（一度開いたあと）。予定はリンクの中とこの端末の下書きにだけあります。</div></footer>
+
+<script src="lib/qrcode.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const WD = ["月","火","水","木","金","土","日"];
+  const KINDS = [
+    {k:"h",name:"ヘルパー"},{k:"d",name:"デイサービス"},{k:"c",name:"通院"},
+    {k:"f",name:"家族"},{k:"m",name:"くすり"},{k:"g",name:"ごみ出し"},{k:"o",name:"その他"}
+  ];
+  const kindName = k => (KINDS.find(x=>x.k===k)||KINDS[6]).name;
+  const DRAFT = "yoteihyo-draft-v1";
+
+  // ---------- 日付 ----------
+  const pad = n => String(n).padStart(2,"0");
+  const ymd = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  const parseYmd = s => { const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||""); return m?new Date(+m[1],+m[2]-1,+m[3]):null; };
+  const wIdx = d => (d.getDay()+6)%7;           // 0=月 … 6=日
+  const monday = d => { const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); x.setDate(x.getDate()-wIdx(x)); return x; };
+  const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+  const md = d => (d.getMonth()+1)+"/"+d.getDate();
+  const wdClass = i => i===5?"sat":i===6?"sun":"";
+
+  // 時刻の並べ順：「10:00」「9時半」「朝」などを分に直す
+  const WORDS = [["早朝",360],["朝",420],["午前",540],["昼",720],["午後",840],["夕方",1020],["夕",1020],["夜",1200],["寝る前",1290]];
+  function minutes(t){
+    t=(t||"").trim().replace(/[０-９：]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+    let m=/^(\d{1,2})[:時](\d{1,2})?/.exec(t);
+    if(m){let h=+m[1],mi=m[2]?+m[2]:(/半/.test(t)?30:0);if(/午後|夕|夜/.test(t)&&h<12)h+=12;return h*60+mi;}
+    for(const [w,v] of WORDS) if(t.includes(w)) return v;
+    return t?1500:-1;   // 時刻なしは一番上、読めない言葉は一番下
+  }
+
+  // ---------- データ ----------
+  // e: {k:種類, h:時刻, x:内容, r:"w"(毎週)|"d"(この日だけ), d:[曜日番号]|"YYYY-MM-DD"}
+  function example(){
+    const nextWed = ymd(addDays(monday(new Date()),2));
+    return {v:1,t:"〇〇さんの予定（例）",w:"",c:"ヘルパー事業所 098-000-0000\n長男 090-0000-0000",e:[
+      {k:"m",h:"朝",x:"朝のくすり",r:"w",d:[0,1,2,3,4,5,6]},
+      {k:"h",h:"10:00",x:"ヘルパー（買い物・そうじ）",r:"w",d:[0,3]},
+      {k:"d",h:"9:00",x:"デイサービス　お迎えが来ます",r:"w",d:[1,4]},
+      {k:"g",h:"朝",x:"燃えるごみ",r:"w",d:[1,4]},
+      {k:"c",h:"14:00",x:"〇〇内科　タクシーで行く",r:"d",d:nextWed},
+      {k:"f",h:"夕方",x:"娘が来る",r:"w",d:[5]},
+      {k:"m",h:"夜",x:"夜のくすり",r:"w",d:[0,1,2,3,4,5,6]}
+    ]};
+  }
+  let data = null, isExample = false, weekOffset = 0, dayOffset = 0;
+
+  function clean(o){
+    const out={v:1,t:String(o&&o.t||"").slice(0,40),w:/^\d{4}-\d{2}-\d{2}$/.test(o&&o.w)?o.w:"",c:String(o&&o.c||"").slice(0,200),e:[]};
+    for(const e of (o&&Array.isArray(o.e)?o.e:[]).slice(0,80)){
+      const k=KINDS.some(x=>x.k===e.k)?e.k:"o";
+      const r=e.r==="d"?"d":"w";
+      let d=r==="w"?(Array.isArray(e.d)?[...new Set(e.d.filter(i=>Number.isInteger(i)&&i>=0&&i<7))].sort():[]):(/^\d{4}-\d{2}-\d{2}$/.test(e.d)?e.d:ymd(new Date()));
+      out.e.push({k,h:String(e.h||"").slice(0,12),x:String(e.x||"").slice(0,60),r,d});
+    }
+    return out;
+  }
+
+  // ---------- リンクに詰める（圧縮 → base64url） ----------
+  const b64u = u8 => { let s=""; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000)); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); };
+  const unb64u = s => { s=s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="="; const b=atob(s),u=new Uint8Array(b.length); for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i); return u; };
+  async function pipe(u8,stream){ return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer()); }
+  async function pack(obj){
+    const raw=new TextEncoder().encode(JSON.stringify(obj));
+    if("CompressionStream" in window){ try{ return "1"+b64u(await pipe(raw,new CompressionStream("deflate-raw"))); }catch(e){} }
+    return "0"+b64u(raw);
+  }
+  async function unpack(s){
+    const body=unb64u(s.slice(1));
+    const raw=s[0]==="1"?await pipe(body,new DecompressionStream("deflate-raw")):body;
+    return JSON.parse(new TextDecoder().decode(raw));
+  }
+  function hashParams(){ const p=new URLSearchParams(location.hash.slice(1)); return {p:p.get("p"),view:p.get("v")}; }
+  async function buildUrl(){
+    const params=new URLSearchParams(); params.set("p",await pack(data));
+    if($("#fOpenToday").checked) params.set("v","today");
+    return location.origin+location.pathname+"#"+params.toString();
+  }
+
+  // ---------- QR（SVG） ----------
+  function qrSvg(text){
+    for(const ecc of ["M","L"]){
+      try{
+        const q=qrcode(0,ecc); q.addData(text,"Byte"); q.make();
+        const n=q.getModuleCount(), qz=2, size=n+qz*2; let d="";
+        for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+="M"+(c+qz)+" "+(r+qz)+"h1v1h-1z";
+        return '<svg viewBox="0 0 '+size+' '+size+'" shape-rendering="crispEdges" role="img" aria-label="この予定表を開くQRコード"><rect width="'+size+'" height="'+size+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+      }catch(e){}
+    }
+    return "";
+  }
+
+  // ---------- 下書き ----------
+  function saveDraft(){ try{ localStorage.setItem(DRAFT,JSON.stringify(data)); }catch(e){} }
+  function loadDraft(){ try{ const s=localStorage.getItem(DRAFT); return s?clean(JSON.parse(s)):null; }catch(e){ return null; } }
+
+  // ---------- 入力画面 ----------
+  const el = (tag,attrs={},kids=[]) => { const n=document.createElement(tag); for(const [k,v] of Object.entries(attrs)){ if(k==="text")n.textContent=v; else if(k.startsWith("on"))n.addEventListener(k.slice(2),v); else n.setAttribute(k,v);} for(const c of kids)n.append(c); return n; };
+
+  function renderWeekOptions(){
+    const sel=$("#fWeek"), keep=data.w;
+    sel.length=1;
+    const base=monday(new Date());
+    for(let i=-1;i<=8;i++){
+      const s=addDays(base,i*7), e=addDays(s,6);
+      sel.append(el("option",{value:ymd(s),text:"決まった週："+md(s)+"（月）〜"+md(e)+"（日）"}));
+    }
+    if(keep && ![...sel.options].some(o=>o.value===keep)){ const s=parseYmd(keep); sel.append(el("option",{value:keep,text:"決まった週："+md(s)+"（月）〜"+md(addDays(s,6))+"（日）"})); }
+    sel.value=keep||"";
+  }
+
+  function renderEntries(){
+    const box=$("#entries"); box.textContent="";
+    data.e.forEach((e,i)=>{
+      const kind=el("select",{class:"kind","aria-label":"種類",id:"k"+i,onchange:ev=>{e.k=ev.target.value;row.style.setProperty("--kc",`var(--k-${kvar(e.k)})`);changed();}});
+      for(const x of KINDS) kind.append(el("option",{value:x.k,text:x.name}));
+      kind.value=e.k;
+      const time=el("input",{type:"text",class:"time","aria-label":"時刻",placeholder:"10:00 / 朝",list:"timeWords",id:"h"+i,value:e.h,oninput:ev=>{e.h=ev.target.value;changed();}});
+      const text=el("input",{type:"text",class:"x","aria-label":"内容",placeholder:"例：ヘルパー（買い物）",maxlength:"60",id:"x"+i,value:e.x,oninput:ev=>{e.x=ev.target.value;changed();}});
+      const del=el("button",{type:"button",class:"del","aria-label":"この予定を消す",text:"消す",onclick:()=>{data.e.splice(i,1);changed();renderEntries();}});
+      const rep=el("select",{"aria-label":"くり返し",id:"r"+i,onchange:ev=>{
+        e.r=ev.target.value; e.d=e.r==="w"?[wIdx(new Date())]:ymd(new Date()); changed(); renderEntries();
+      }},[el("option",{value:"w",text:"毎週"}),el("option",{value:"d",text:"この日だけ"})]);
+      rep.value=e.r;
+      const when=el("div",{class:"when"},[rep]);
+      if(e.r==="w"){
+        const days=el("div",{class:"days",role:"group","aria-label":"曜日"});
+        WD.forEach((w,j)=>{
+          days.append(el("button",{type:"button",class:wdClass(j),"aria-pressed":String(e.d.includes(j)),text:w,onclick:ev=>{
+            e.d=e.d.includes(j)?e.d.filter(x=>x!==j):[...e.d,j].sort(); ev.target.setAttribute("aria-pressed",String(e.d.includes(j))); changed();
+          }}));
+        });
+        days.append(el("button",{type:"button",class:"every",text:"毎日",onclick:()=>{e.d=[0,1,2,3,4,5,6];changed();renderEntries();}}));
+        when.append(days);
+      }else{
+        when.append(el("input",{type:"date","aria-label":"日付",id:"d"+i,value:e.d,onchange:ev=>{e.d=ev.target.value||ymd(new Date());changed();}}));
+      }
+      const row=el("div",{class:"entry"},[kind,time,text,del,when]);
+      row.style.setProperty("--kc",`var(--k-${kvar(e.k)})`);
+      box.append(row);
+    });
+    if(!data.e.length) box.append(el("p",{class:"hint",text:"まだ予定がありません。「＋ 予定を足す」から入れてください。"}));
+  }
+  const kvar = k => ({h:"helper",d:"day",c:"clinic",f:"family",m:"med",g:"trash",o:"other"})[k]||"other";
+
+  function fillHeader(){
+    $("#fTitle").value=data.t; $("#fContact").value=data.c; renderWeekOptions();
+  }
+
+  let linkDirty=true;
+  function changed(){
+    if(isExample){ isExample=false; $("#exampleNote").hidden=true; }
+    linkDirty=true; $("#shareBox").hidden=true; saveDraft();
+  }
+
+  // ---------- 予定の取り出し ----------
+  function itemsOn(date){
+    const key=ymd(date), wi=wIdx(date);
+    return data.e.filter(e=>e.r==="w"?e.d.includes(wi):e.d===key)
+      .map((e,i)=>({e,i,m:minutes(e.h)}))
+      .sort((a,b)=>a.m-b.m||a.i-b.i).map(o=>o.e);
+  }
+  function weekStart(){
+    const base=data.w?parseYmd(data.w):monday(new Date());
+    return addDays(base,weekOffset*7);
+  }
+
+  // ---------- 週の表 ----------
+  let lastUrl="";
+  async function renderSheet(){
+    const s=$("#sheet"), start=weekStart(), end=addDays(start,6), todayKey=ymd(new Date());
+    const size=$("#fSize").value; s.dataset.size=size;
+    s.textContent="";
+    const qr=el("div",{class:"qr"});
+    const head=el("div",{class:"head"},[
+      el("div",{},[el("h2",{text:data.t||"予定表"}),el("div",{class:"range",text:start.getFullYear()+"年 "+md(start)+"（月）〜 "+md(end)+"（日）"})]),
+      qr
+    ]);
+    const grid=el("div",{class:"grid7"+(size==="xl"?" split":"")});
+    for(let i=0;i<7;i++){
+      const d=addDays(start,i), list=itemsOn(d);
+      const ul=el("ul");
+      for(const e of list){
+        ul.append(el("li",{"data-k":e.k},[
+          el("span",{class:"t"},[el("span",{class:"k",text:kindName(e.k)}),document.createTextNode(e.h||"")]),
+          el("span",{class:"x",text:e.x})
+        ]));
+      }
+      const day=el("div",{class:"day "+wdClass(i)+(ymd(d)===todayKey?" is-today":"")},[
+        el("div",{class:"dh"},[el("span",{class:"dw",text:WD[i]}),el("span",{class:"dd",text:md(d)})]),
+        list.length?ul:el("div",{class:"none",text:"予定なし"})
+      ]);
+      grid.append(day);
+    }
+    if(size==="xl"){ // 2段にしたときの8マス目：連絡先と凡例
+      const legend=el("div",{class:"legend",style:"padding:10px;display:grid;gap:4px;font-size:calc(14px*var(--s));color:#444;align-content:start"});
+      for(const x of KINDS) legend.append(el("span",{"data-k":x.k,text:x.name}));
+      grid.append(el("div",{class:"day",style:"grid-template-rows:auto"},[legend]));
+    }
+    const legend=el("div",{class:"legend"});
+    for(const x of KINDS) legend.append(el("span",{"data-k":x.k,text:x.name}));
+    const contact=el("div",{class:"c"},[el("small",{text:"困ったときの連絡先"}),document.createTextNode(data.c||"（未記入）")]);
+    const foot=el("div",{class:"foot"},[contact,size==="xl"?el("span"):legend]);
+    s.append(head,grid,foot);
+    // QRは最後に（圧縮が非同期のため）
+    fitToPage();
+    try{ lastUrl=await buildUrl(); const svg=qrSvg(lastUrl); if(svg){ qr.innerHTML=svg; qr.append(el("span",{text:"読むと\nスマホで開けます"})); qr.lastChild.style.whiteSpace="pre-line"; } }catch(e){}
+  }
+
+  // 印刷で1枚に収まるよう、中身が多いときだけ縮める（A4横の印刷範囲は約1062×733px）
+  function fitToPage(){
+    const s=$("#sheet"); if(!s) return;
+    // 縮めると横幅が広がって折り返しが減るので、実際の幅で測りながら倍率を探す
+    const heightAt=z=>{ s.style.width=(1062/z)+"px"; return s.scrollHeight*z; };
+    s.classList.add("measure");
+    let z=1;
+    if(heightAt(1)>715){ let lo=0.4,hi=1; for(let i=0;i<8;i++){ const m=(lo+hi)/2; if(heightAt(m)<=715) lo=m; else hi=m; } z=lo; }
+    s.classList.remove("measure"); s.style.width="";
+    s.style.setProperty("--fit",z.toFixed(3));
+    const n=$("#fitNote"); if(n) n.textContent=z<0.99?"　予定が多いので、1枚に収めるため約"+Math.round(z*100)+"%の大きさで印刷されます。":"";
+  }
+  window.addEventListener("beforeprint",fitToPage);
+
+  // ---------- 今日 ----------
+  let clockTimer=null;
+  function renderToday(){
+    const now=new Date(), d=addDays(new Date(now.getFullYear(),now.getMonth(),now.getDate()),dayOffset), i=wIdx(d);
+    const big=$("#bigDate"); big.textContent="";
+    big.append(document.createTextNode((d.getMonth()+1)+"月"+d.getDate()+"日"),el("span",{class:"w "+wdClass(i),text:"（"+WD[i]+"）"}));
+    const rel=dayOffset===0?"きょう":dayOffset===1?"あした":dayOffset===-1?"きのう":"";
+    $("#clock").textContent=(rel?rel+"　":"")+(dayOffset===0?"いま "+now.getHours()+":"+pad(now.getMinutes()):"");
+    const list=itemsOn(d), ul=$("#tlist"); ul.textContent="";
+    const nowM=now.getHours()*60+now.getMinutes();
+    let nextMarked=false;
+    for(const e of list){
+      const m=minutes(e.h);
+      let cls="kc-"+e.k;
+      if(dayOffset===0 && m>=0 && m<1500){
+        if(m+60<nowM) cls+=" past";               // 1時間以上前は薄く
+        else if(!nextMarked && m>=nowM-30){ cls+=" next"; nextMarked=true; }
+      }
+      ul.append(el("li",{class:cls},[
+        el("span",{class:"t",text:e.h||"—"}),
+        el("span",{},[el("span",{class:"k",text:kindName(e.k)}),el("span",{class:"x",text:e.x})])
+      ]));
+    }
+    if(!list.length) ul.append(el("li",{class:"empty",style:"border:0;padding:0",text:"予定はありません"}));
+    const c=$("#tContact");
+    if(data.c){ c.hidden=false; c.textContent=""; c.append(el("small",{text:"困ったときの連絡先"}),document.createTextNode(data.c)); } else c.hidden=true;
+  }
+  let wakeLock=null;
+  async function toggleWake(){
+    const b=$("#wakeBtn");
+    if(wakeLock){ try{await wakeLock.release();}catch(e){} wakeLock=null; b.textContent="画面を消さない"; return; }
+    try{ wakeLock=await navigator.wakeLock.request("screen"); b.textContent="画面を消さない：オン"; wakeLock.addEventListener("release",()=>{wakeLock=null;b.textContent="画面を消さない";}); }
+    catch(e){ b.textContent="この端末では使えません"; }
+  }
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible" && $("#wakeBtn").textContent.endsWith("オン") && !wakeLock) toggleWake(); });
+
+  // ---------- タブ ----------
+  function show(which){
+    for(const [t,p] of [["#tabEdit","#paneEdit"],["#tabWeek","#paneWeek"],["#tabToday","#paneToday"]]){
+      const on=t==="#tab"+which; $(t).setAttribute("aria-selected",String(on)); $(p).hidden=!on;
+    }
+    clearInterval(clockTimer);
+    if(which==="Week") renderSheet();
+    if(which==="Today"){ renderToday(); clockTimer=setInterval(renderToday,30000); }
+  }
+  $("#tabEdit").onclick=()=>show("Edit");
+  $("#tabWeek").onclick=()=>show("Week");
+  $("#tabToday").onclick=()=>show("Today");
+
+  // ---------- ボタン ----------
+  $("#fTitle").oninput=e=>{data.t=e.target.value;changed();};
+  $("#fContact").oninput=e=>{data.c=e.target.value;changed();};
+  $("#fWeek").onchange=e=>{data.w=e.target.value;weekOffset=0;changed();};
+  $("#fOpenToday").onchange=()=>{linkDirty=true;$("#shareBox").hidden=true;};
+  $("#addEntry").onclick=()=>{
+    data.e.push({k:"h",h:"",x:"",r:"w",d:[wIdx(new Date())]}); changed(); renderEntries();
+    const last=$("#entries").lastElementChild; last&&last.querySelector(".x").focus();
+  };
+  $("#clearAll").onclick=()=>{ data={v:1,t:"",w:"",c:"",e:[]}; isExample=false; $("#exampleNote").hidden=true; saveDraft(); fillHeader(); renderEntries(); $("#fTitle").focus(); };
+  $("#makeLink").onclick=async()=>{
+    const url=await buildUrl();
+    $("#shareUrl").value=url; $("#shareQr").innerHTML=qrSvg(url)||"<p>予定が多すぎてQRに入りません。リンクで送ってください。</p>";
+    $("#shareBox").hidden=false; $("#shareStatus").textContent=url.length+"文字のリンクができました";
+    $("#shareLink").hidden=!navigator.share;
+    try{ history.replaceState(null,"",url); }catch(e){}
+    linkDirty=false;
+  };
+  $("#copyLink").onclick=async()=>{
+    const t=$("#shareUrl");
+    try{ await navigator.clipboard.writeText(t.value); $("#shareStatus").textContent="コピーしました。LINEやメールに貼りつけて送れます"; }
+    catch(e){ t.focus(); t.select(); $("#shareStatus").textContent="選択しました。長押しか Ctrl+C でコピーしてください"; }
+  };
+  $("#shareLink").onclick=async()=>{ try{ await navigator.share({title:data.t||"予定表",url:$("#shareUrl").value}); }catch(e){} };
+  const doPrint=async()=>{ show("Week"); await renderSheet(); setTimeout(()=>window.print(),50); };
+  $("#goPrint").onclick=doPrint; $("#printBtn").onclick=doPrint;
+  $("#fSize").onchange=()=>{ try{localStorage.setItem("yoteihyo-size",$("#fSize").value);}catch(e){} renderSheet(); };
+  $("#prevWeek").onclick=()=>{weekOffset--;renderSheet();};
+  $("#nextWeek").onclick=()=>{weekOffset++;renderSheet();};
+  $("#thisWeek").onclick=()=>{weekOffset=data.w?Math.round((monday(new Date())-parseYmd(data.w))/6048e5):0;renderSheet();};
+  $("#prevDay").onclick=()=>{dayOffset--;renderToday();};
+  $("#nextDay").onclick=()=>{dayOffset++;renderToday();};
+  $("#toDay").onclick=()=>{dayOffset=0;renderToday();};
+  $("#wakeBtn").onclick=toggleWake;
+  window.addEventListener("beforeprint",()=>{ if($("#paneWeek").hidden){ $("#paneWeek").hidden=false; } });
+
+  // 時刻の候補
+  const dl=el("datalist",{id:"timeWords"});
+  for(const w of ["朝","昼","夕方","夜","寝る前","午前","午後","9:00","10:00","13:00","14:00","15:00"]) dl.append(el("option",{value:w}));
+  document.body.append(dl);
+
+  // ---------- はじまり ----------
+  (async()=>{
+    try{ const s=localStorage.getItem("yoteihyo-size"); if(s) $("#fSize").value=s; }catch(e){}
+    const hp=hashParams();
+    if(hp.p){
+      try{ data=clean(await unpack(hp.p)); $("#sharedNote").hidden=false; $("#fOpenToday").checked=hp.view==="today"; }
+      catch(e){ data=null; }
+    }
+    if(!data) data=loadDraft();
+    if(!data){ data=clean(example()); isExample=true; $("#exampleNote").hidden=false; }
+    fillHeader(); renderEntries();
+    if(hp.p && data) show(hp.view==="today"?"Today":"Week"); else show("Edit");
+  })();
+
+  if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
