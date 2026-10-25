@@ -184,14 +184,14 @@ textarea{resize:vertical}
 .tlist .k{display:block;font-size:clamp(14px,2.6vw,18px);color:var(--kc);font-weight:700}
 .tlist li.past{opacity:.45}
 .tlist li.next{border-color:var(--accent);border-left-color:var(--kc);background:var(--soft)}
-.tlist li.next .t::after{content:"つぎ";display:block;font-size:16px;color:var(--accent);letter-spacing:.1em}
+.tlist li.next .t::after{content:"次";display:block;font-size:16px;color:var(--accent);letter-spacing:.1em}
 .today .empty{font-size:clamp(22px,4.6vw,34px);color:var(--muted);font-weight:700;padding:20px 0}
 .today .contact{border-top:2px solid var(--line);padding-top:14px;font-size:clamp(18px,3.6vw,26px);font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}
 .today .contact small{display:block;font-size:14px;color:var(--muted)}
 .kc-h{--kc:var(--k-helper)}.kc-d{--kc:var(--k-day)}.kc-c{--kc:var(--k-clinic)}.kc-f{--kc:var(--k-family)}.kc-m{--kc:var(--k-med)}.kc-g{--kc:var(--k-trash)}.kc-o{--kc:var(--k-other)}
 
 /* ---- 見る専用（送られてきたリンクを開いたとき）：表と印刷だけ ---- */
-body.viewer .tabs,body.viewer #sharedNote,body.viewer #exampleNote{display:none!important}
+body.viewer .tabs,body.viewer #sharedNote{display:none!important}
 body.viewer .bar h1{font-size:20px}
 .viewerfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:14px}
 .viewerfoot .spacer{flex:1}
@@ -345,46 +345,42 @@ footer .wrap{padding-block:0 32px}
   <div class="wrap">
     <!-- ===== 予定（作る） ===== -->
     <section id="paneEdit" role="tabpanel" aria-labelledby="tabEdit" style="display:grid;gap:20px">
-      <div class="note" id="exampleNote" hidden>
-        <span>いま表示しているのは<b>例</b>です。書きかえるか、まっさらにして始めてください。</span>
-        <button id="clearAll" type="button">まっさらにする</button>
-      </div>
       <div class="note" id="sharedNote" hidden>
-        <span>送られてきたリンクの予定表を開いています。ここで直しても、送った人の予定表は変わりません。</span>
+        <span>送られてきた予定表を開いています。ここで編集しても、送った人の予定表は変わりません。</span>
       </div>
       <div class="panel">
         <div class="row2">
           <label class="f">予定表の名前
-            <input id="fTitle" type="text" placeholder="例：〇〇さんの予定" maxlength="40">
+            <input id="fTitle" type="text" placeholder="例：〇〇様の予定" maxlength="40">
           </label>
           <label class="f">何週目を表示するか
             <select id="fWeek">
-              <option value="">開いたときの週（毎週くり返す予定向け）</option>
+              <option value="">開いた日の週（毎週の予定向け）</option>
             </select>
           </label>
         </div>
         <label class="f">困ったときの連絡先（表の下に大きく出ます）
-          <textarea id="fContact" rows="2" maxlength="200" placeholder="例：ヘルパー事業所 098-000-0000　／　長男 090-0000-0000"></textarea>
+          <textarea id="fContact" rows="2" maxlength="200" placeholder="例：〇〇事業所 098-000-0000"></textarea>
         </label>
       </div>
 
       <div class="panel">
         <h2>予定</h2>
-        <p class="hint">「毎週」はくり返す予定、「この日だけ」は1回きりの予定です。時刻は「10:00」のほかに「朝」「昼」「夕方」なども書けます。</p>
+        <p class="hint">「毎週」は繰り返しの予定、「この日だけ」は1回限りの予定です。時刻は「10:00」のほかに「朝」「昼」「夕方」なども書けます。</p>
         <div class="entries" id="entries"></div>
         <div class="actions">
-          <button class="btn" type="button" id="addEntry">＋ 予定を足す</button>
+          <button class="btn" type="button" id="addEntry">＋ 予定を追加</button>
         </div>
       </div>
 
       <div class="panel">
-        <h2>送る・残す</h2>
+        <h2>共有・印刷</h2>
         <p class="hint">予定はこのリンクの中にだけ入ります。サーバーにもこの端末の外にも保存されません。リンクを受け取った人は、開くだけで同じ表を見られます。</p>
         <div class="actions">
-          <button class="btn primary" type="button" id="makeLink">送るためのリンクを作る</button>
+          <button class="btn primary" type="button" id="makeLink">共有用のリンクを作成</button>
           <button class="btn" type="button" id="goPrint">印刷する</button>
           <label class="f" style="grid-auto-flow:column;align-items:center;gap:8px;font-weight:400;color:var(--ink)">
-            <input type="checkbox" id="fOpenToday" style="width:20px;height:20px"> リンクを開いたら「今日」の画面にする（置いておくスマホ用）
+            <input type="checkbox" id="fOpenToday" style="width:20px;height:20px"> リンクを開いたときに「今日」の画面を表示する（据え置きのスマホ用）
           </label>
         </div>
         <div class="share" id="shareBox" hidden>
@@ -410,8 +406,8 @@ footer .wrap{padding-block:0 32px}
         <span class="spacer"></span>
         <label class="f" style="grid-auto-flow:column;align-items:center;gap:6px">文字
           <select id="fSize">
-            <option value="m">ふつう</option>
-            <option value="l">大きい</option>
+            <option value="m">標準</option>
+            <option value="l">大</option>
             <option value="xl">特大（2段）</option>
           </select>
         </label>
@@ -443,52 +439,48 @@ footer .wrap{padding-block:0 32px}
 
     <!-- ===== メモ（書く） ===== -->
     <section id="paneMemo" role="tabpanel" aria-labelledby="tabMemo" hidden style="display:grid;gap:20px">
-      <div class="note" id="mExampleNote" hidden>
-        <span>いま入っているのは<b>例</b>です。書きかえるか、まっさらにして始めてください。</span>
-        <button id="mClearAll" type="button">まっさらにする</button>
-      </div>
       <div class="note" id="mSharedNote" hidden>
-        <span>送られてきたメモをもとに書いています。ここで直しても、送った人のメモは変わりません。</span>
+        <span>送られてきたメモを開いています。ここで編集しても、送った人のメモは変わりません。</span>
       </div>
       <div class="editgrid">
         <div class="col">
           <div class="panel">
-            <h2>メモを書く</h2>
+            <h2>メモ</h2>
             <div class="row2" style="grid-template-columns:1fr 1fr">
-              <label class="f">だれへ
-                <input id="mTo" type="text" maxlength="30" placeholder="例：お母さん">
+              <label class="f">宛先
+                <input id="mTo" type="text" maxlength="30" placeholder="例：〇〇様">
               </label>
-              <label class="f">だれから
-                <input id="mFrom" type="text" maxlength="30" placeholder="例：長男">
+              <label class="f">差出人
+                <input id="mFrom" type="text" maxlength="30" placeholder="例：〇〇">
               </label>
             </div>
-            <label class="f">いちばん伝えたいこと（黄色で大きく出ます）
-              <textarea id="mMain" rows="2" maxlength="80" placeholder="例：あしたは9時にお迎えが来ます"></textarea>
+            <label class="f">要点（黄色の枠で大きく表示されます）
+              <textarea id="mMain" rows="2" maxlength="80" placeholder="一番伝えたいことを短く"></textarea>
               <span class="count" id="mcMain"></span>
             </label>
-            <label class="f">くわしく（なくてもかまいません）
-              <textarea id="mBody" rows="5" maxlength="600" placeholder="例：朝ごはんのあと、玄関で待っていてください。"></textarea>
+            <label class="f">詳細（省略可）
+              <textarea id="mBody" rows="5" maxlength="600" placeholder="補足があれば"></textarea>
               <span class="count" id="mcBody"></span>
             </label>
             <div style="display:grid;gap:8px">
-              <span style="font-size:14px;color:var(--muted);font-weight:700">確認すること・持ち物（受け取った人がチェックできます）</span>
+              <span style="font-size:14px;color:var(--muted);font-weight:700">確認事項・持ち物（受け取った人がチェックできます）</span>
               <div class="checkrows" id="mChecks"></div>
-              <div class="actions"><button class="btn" type="button" id="mAddCheck">＋ 1つ足す</button></div>
+              <div class="actions"><button class="btn" type="button" id="mAddCheck">＋ 項目を追加</button></div>
             </div>
             <label class="f" style="max-width:260px">文字の大きさ
               <select id="mSize">
-                <option value="m">ふつう</option>
-                <option value="l">大きい</option>
+                <option value="m">標準</option>
+                <option value="l">大</option>
                 <option value="xl">特大</option>
               </select>
             </label>
           </div>
 
           <div class="panel">
-            <h2>送る・残す</h2>
+            <h2>共有・印刷</h2>
             <p class="hint">メモはこのリンクの中にだけ入ります。サーバーにもこの端末の外にも保存されません。リンクを手にした人は誰でも読めるので、見られて困ることは書かないでください。</p>
             <div class="actions">
-              <button class="btn primary" type="button" id="mMakeLink">送るためのリンクを作る</button>
+              <button class="btn primary" type="button" id="mMakeLink">共有用のリンクを作成</button>
               <button class="btn" type="button" id="mGoPrint">印刷する</button>
             </div>
             <div class="share" id="mShareBox" hidden>
@@ -506,7 +498,7 @@ footer .wrap{padding-block:0 32px}
         </div>
 
         <div class="previewcol">
-          <p class="preview-label">受け取った人には、こう見えます</p>
+          <p class="preview-label">受け取った人の画面（プレビュー）</p>
           <div id="mPreview"></div>
         </div>
       </div>
@@ -517,8 +509,8 @@ footer .wrap{padding-block:0 32px}
       <div class="viewtools">
         <label class="f" style="grid-auto-flow:column;align-items:center;gap:6px">文字
           <select id="mvSize">
-            <option value="m">ふつう</option>
-            <option value="l">大きい</option>
+            <option value="m">標準</option>
+            <option value="l">大</option>
             <option value="xl">特大</option>
           </select>
         </label>
@@ -527,15 +519,15 @@ footer .wrap{padding-block:0 32px}
       </div>
       <div id="mvCard"></div>
       <div class="viewerfoot">
-        <p>チェックの印は、この端末にだけ残ります。送った人には届きません。</p>
-        <button class="btn quiet" type="button" id="mvToEdit">このメモをもとに書く・自分でも作る</button>
+        <p>チェックはこの端末にだけ記録されます。送った人には届きません。</p>
+        <button class="btn quiet" type="button" id="mvToEdit">このメモを編集する・新しく作る</button>
       </div>
     </section>
 
     <div class="viewerfoot" id="viewerFoot" hidden>
       <button class="btn quiet" type="button" id="viewOther"></button>
       <span class="spacer"></span>
-      <button class="btn quiet" type="button" id="toEdit">この予定表を直す・自分用に作る</button>
+      <button class="btn quiet" type="button" id="toEdit">この予定表を編集する・新しく作る</button>
     </div>
   </div>
 </main>
@@ -549,7 +541,7 @@ footer .wrap{padding-block:0 32px}
   const WD = ["月","火","水","木","金","土","日"];
   const KINDS = [
     {k:"h",name:"ヘルパー"},{k:"d",name:"デイサービス"},{k:"c",name:"通院"},
-    {k:"f",name:"家族"},{k:"m",name:"くすり"},{k:"g",name:"ごみ出し"},{k:"o",name:"その他"}
+    {k:"f",name:"家族"},{k:"m",name:"薬"},{k:"g",name:"ごみ出し"},{k:"o",name:"その他"}
   ];
   const kindName = k => (KINDS.find(x=>x.k===k)||KINDS[6]).name;
   const DRAFT = "yoteihyo-draft-v1";
@@ -576,19 +568,7 @@ footer .wrap{padding-block:0 32px}
 
   // ---------- データ ----------
   // e: {k:種類, h:時刻, x:内容, r:"w"(毎週)|"d"(この日だけ), d:[曜日番号]|"YYYY-MM-DD"}
-  function example(){
-    const nextWed = ymd(addDays(monday(new Date()),2));
-    return {v:1,t:"〇〇さんの予定（例）",w:"",c:"ヘルパー事業所 098-000-0000\n長男 090-0000-0000",e:[
-      {k:"m",h:"朝",x:"朝のくすり",r:"w",d:[0,1,2,3,4,5,6]},
-      {k:"h",h:"10:00",x:"ヘルパー（買い物・そうじ）",r:"w",d:[0,3]},
-      {k:"d",h:"9:00",x:"デイサービス　お迎えが来ます",r:"w",d:[1,4]},
-      {k:"g",h:"朝",x:"燃えるごみ",r:"w",d:[1,4]},
-      {k:"c",h:"14:00",x:"〇〇内科　タクシーで行く",r:"d",d:nextWed},
-      {k:"f",h:"夕方",x:"娘が来る",r:"w",d:[5]},
-      {k:"m",h:"夜",x:"夜のくすり",r:"w",d:[0,1,2,3,4,5,6]}
-    ]};
-  }
-  let data = null, isExample = false, weekOffset = 0, dayOffset = 0;
+  let data = null, weekOffset = 0, dayOffset = 0;
 
   function clean(o){
     const out={v:1,t:String(o&&o.t||"").slice(0,40),w:/^\d{4}-\d{2}-\d{2}$/.test(o&&o.w)?o.w:"",c:String(o&&o.c||"").slice(0,200),e:[]};
@@ -690,8 +670,8 @@ footer .wrap{padding-block:0 32px}
       kind.value=e.k;
       const time=el("input",{type:"text",class:"time","aria-label":"時刻",placeholder:"10:00 / 朝",list:"timeWords",id:"h"+i,value:e.h,oninput:ev=>{e.h=ev.target.value;changed();}});
       const text=el("input",{type:"text",class:"x","aria-label":"内容",placeholder:"例：ヘルパー（買い物）",maxlength:"60",id:"x"+i,value:e.x,oninput:ev=>{e.x=ev.target.value;changed();}});
-      const del=el("button",{type:"button",class:"del","aria-label":"この予定を消す",text:"消す",onclick:()=>{data.e.splice(i,1);changed();renderEntries();}});
-      const rep=el("select",{"aria-label":"くり返し",id:"r"+i,onchange:ev=>{
+      const del=el("button",{type:"button",class:"del","aria-label":"この予定を削除",text:"削除",onclick:()=>{data.e.splice(i,1);changed();renderEntries();}});
+      const rep=el("select",{"aria-label":"繰り返し",id:"r"+i,onchange:ev=>{
         e.r=ev.target.value; e.d=e.r==="w"?[wIdx(new Date())]:ymd(new Date()); changed(); renderEntries();
       }},[el("option",{value:"w",text:"毎週"}),el("option",{value:"d",text:"この日だけ"})]);
       rep.value=e.r;
@@ -712,7 +692,7 @@ footer .wrap{padding-block:0 32px}
       row.style.setProperty("--kc",`var(--k-${kvar(e.k)})`);
       box.append(row);
     });
-    if(!data.e.length) box.append(el("p",{class:"hint",text:"まだ予定がありません。「＋ 予定を足す」から入れてください。"}));
+    if(!data.e.length) box.append(el("p",{class:"hint",text:"予定がありません。「＋ 予定を追加」から入力してください。"}));
   }
   const kvar = k => ({h:"helper",d:"day",c:"clinic",f:"family",m:"med",g:"trash",o:"other"})[k]||"other";
 
@@ -722,7 +702,6 @@ footer .wrap{padding-block:0 32px}
 
   let linkDirty=true;
   function changed(){
-    if(isExample){ isExample=false; $("#exampleNote").hidden=true; }
     linkDirty=true; $("#shareBox").hidden=true; saveDraft();
   }
 
@@ -748,7 +727,7 @@ footer .wrap{padding-block:0 32px}
     for(let i=0;i<7;i++){
       const d=addDays(start,i), list=itemsOn(d), isToday=ymd(d)===todayKey;
       const h=el("h3",{},[document.createTextNode(md(d)+"（"+WD[i]+"）")]);
-      if(isToday) h.append(el("span",{class:"wl-today",text:"きょう"}));
+      if(isToday) h.append(el("span",{class:"wl-today",text:"今日"}));
       let body;
       if(list.length){
         body=el("ul");
@@ -825,8 +804,8 @@ footer .wrap{padding-block:0 32px}
     const now=new Date(), d=addDays(new Date(now.getFullYear(),now.getMonth(),now.getDate()),dayOffset), i=wIdx(d);
     const big=$("#bigDate"); big.textContent="";
     big.append(document.createTextNode((d.getMonth()+1)+"月"+d.getDate()+"日"),el("span",{class:"w "+wdClass(i),text:"（"+WD[i]+"）"}));
-    const rel=dayOffset===0?"きょう":dayOffset===1?"あした":dayOffset===-1?"きのう":"";
-    $("#clock").textContent=(rel?rel+"　":"")+(dayOffset===0?"いま "+now.getHours()+":"+pad(now.getMinutes()):"");
+    const rel=dayOffset===0?"今日":dayOffset===1?"明日":dayOffset===-1?"昨日":"";
+    $("#clock").textContent=(rel?rel+"　":"")+(dayOffset===0?"現在 "+now.getHours()+":"+pad(now.getMinutes()):"");
     const list=itemsOn(d), ul=$("#tlist"); ul.textContent="";
     const nowM=now.getHours()*60+now.getMinutes();
     let nextMarked=false;
@@ -899,7 +878,6 @@ footer .wrap{padding-block:0 32px}
     data.e.push({k:"h",h:"",x:"",r:"w",d:[wIdx(new Date())]}); changed(); renderEntries();
     const last=$("#entries").lastElementChild; last&&last.querySelector(".x").focus();
   };
-  $("#clearAll").onclick=()=>{ data={v:1,t:"",w:"",c:"",e:[]}; isExample=false; $("#exampleNote").hidden=true; saveDraft(); fillHeader(); renderEntries(); $("#fTitle").focus(); };
   $("#makeLink").onclick=async()=>{
     const url=await buildUrl();
     $("#shareUrl").value=url; $("#shareQr").innerHTML=qrSvg(await qrParts($("#fOpenToday").checked))||"<p>予定が多すぎてQRに入りません。リンクで送ってください。</p>";
@@ -944,18 +922,13 @@ footer .wrap{padding-block:0 32px}
   const MDRAFT="tsutaerucho-memo-draft-v1";
   const JWD=["日","月","火","水","木","金","土"];
   const jpDate=s=>{ const d=parseYmd(s); return d?(d.getMonth()+1)+"月"+d.getDate()+"日（"+JWD[d.getDay()]+"）":""; };
-  function memoExample(){
-    return {v:1,to:"お母さん",f:"長男",m:"あしたは9時に\nデイサービスのお迎えが来ます",
-      b:"朝ごはんのあと、玄関で待っていてください。\n雨の予報なので、上着を一枚持っていくと安心です。",
-      c:["保険証","お薬手帳","上着"],s:"m",d:ymd(new Date())};
-  }
   function memoClean(o){
     o=o||{};
     return {v:1,to:String(o.to||"").slice(0,30),f:String(o.f||"").slice(0,30),m:String(o.m||"").slice(0,80),b:String(o.b||"").slice(0,600),
       c:(Array.isArray(o.c)?o.c:[]).slice(0,12).map(x=>String(x||"").slice(0,40)),
       s:["m","l","xl"].includes(o.s)?o.s:"m",d:/^\d{4}-\d{2}-\d{2}$/.test(o.d)?o.d:ymd(new Date())};
   }
-  let memo=null, memoIsExample=false, memoViewer=false, memoKey="";
+  let memo=null, memoViewer=false, memoKey="";
   const pageBase=()=>location.origin+location.pathname;
   async function memoUrl(){ return pageBase()+"#m="+await pack(memo); }
   async function memoQrParts(){ const {z,bytes}=await packBytes(memo); return [pageBase()+"#m="+(z?"2":"3"), toDigits(bytes)]; }
@@ -974,7 +947,7 @@ footer .wrap{padding-block:0 32px}
     const items=o.c.map(x=>x.trim()).filter(Boolean);
     if(o.m.trim()) card.append(el("p",{class:"main",text:o.m.trim()}));
     if(o.b.trim()) card.append(el("p",{class:"body",text:o.b.trim()}));
-    if(!o.m.trim()&&!o.b.trim()&&!items.length) card.append(el("p",{class:"body empty",text:"（まだ何も書かれていません）"}));
+    if(!o.m.trim()&&!o.b.trim()&&!items.length) card.append(el("p",{class:"body empty",text:"（未記入）"}));
     if(items.length){
       const done=interactive?loadChecks():[];
       const ul=el("ul");
@@ -984,11 +957,11 @@ footer .wrap{padding-block:0 32px}
         else cb.disabled=true;
         ul.append(el("li",{},[el("label",{},[cb,el("span",{class:"box","aria-hidden":"true"}),el("span",{class:"ct",text:x})])]));
       });
-      card.append(el("section",{class:"checks"},[el("h3",{text:"確認すること"}),ul]));
+      card.append(el("section",{class:"checks"},[el("h3",{text:"確認事項"}),ul]));
     }
     card.append(el("div",{class:"meta"},[
       el("span",{class:"from",text:o.f?o.f+"より":""}),
-      el("span",{text:o.d?jpDate(o.d)+"に書きました":""})
+      el("span",{text:o.d?jpDate(o.d)+" 作成":""})
     ]));
     return card;
   }
@@ -997,26 +970,24 @@ footer .wrap{padding-block:0 32px}
   function renderMemoChecks(){
     const box=$("#mChecks"); box.textContent="";
     memo.c.forEach((x,i)=>{
-      const inp=el("input",{type:"text",maxlength:"40","aria-label":"確認すること "+(i+1),placeholder:"例：保険証",value:x,oninput:e=>{memo.c[i]=e.target.value;memoChanged();}});
-      box.append(el("div",{class:"checkrow"},[inp,el("button",{type:"button",class:"del",text:"消す","aria-label":"この行を消す",onclick:()=>{memo.c.splice(i,1);memoChanged();renderMemoChecks();}})]));
+      const inp=el("input",{type:"text",maxlength:"40","aria-label":"確認事項 "+(i+1),placeholder:"例：保険証",value:x,oninput:e=>{memo.c[i]=e.target.value;memoChanged();}});
+      box.append(el("div",{class:"checkrow"},[inp,el("button",{type:"button",class:"del",text:"削除","aria-label":"この項目を削除",onclick:()=>{memo.c.splice(i,1);memoChanged();renderMemoChecks();}})]));
     });
     $("#mAddCheck").disabled=memo.c.length>=12;
   }
   function memoCounts(){ $("#mcMain").textContent=memo.m.length+"／80"; $("#mcBody").textContent=memo.b.length+"／600"; }
   function fillMemoForm(){
     $("#mTo").value=memo.to; $("#mFrom").value=memo.f; $("#mMain").value=memo.m; $("#mBody").value=memo.b; $("#mSize").value=memo.s;
-    renderMemoChecks(); memoCounts(); $("#mExampleNote").hidden=!memoIsExample;
+    renderMemoChecks(); memoCounts();
   }
   function renderMemoPreview(){ const p=$("#mPreview"); p.textContent=""; p.append(memoCard(memo)); }
   function memoChanged(){
-    if(memoIsExample){ memoIsExample=false; $("#mExampleNote").hidden=true; }
     $("#mShareBox").hidden=true; saveMemoDraft(); memoCounts(); renderMemoPreview(); scheduleMemoView();
   }
   const mbind=(id,key)=>{ $(id).addEventListener("input",e=>{memo[key]=e.target.value;memoChanged();}); };
   mbind("#mTo","to"); mbind("#mFrom","f"); mbind("#mMain","m"); mbind("#mBody","b");
   $("#mSize").addEventListener("change",e=>{memo.s=e.target.value;memoChanged();});
   $("#mAddCheck").onclick=()=>{ if(memo.c.length>=12) return; memo.c.push(""); memoChanged(); renderMemoChecks(); const r=$("#mChecks").lastElementChild; r&&r.querySelector("input").focus(); };
-  $("#mClearAll").onclick=()=>{ memo=memoClean({}); memoIsExample=false; saveMemoDraft(); fillMemoForm(); renderMemoPreview(); $("#mTo").focus(); };
 
   // 送るときにリンクの上に付ける一文：「メモ（お母さんへ）：あしたは9時に…」
   function memoShareLabel(){
