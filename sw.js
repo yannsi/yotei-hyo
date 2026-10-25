@@ -1,5 +1,5 @@
 // 予定表メーカー：一度開いたら、ページと部品を端末に保存してオフラインでも開けるようにする
-const VERSION = "yotei-hyo-v2";
+const VERSION = "yotei-hyo-v3";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./lib/qrcode.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const FONTS = "yotei-hyo-fonts";
 

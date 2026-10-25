@@ -179,6 +179,35 @@ textarea{resize:vertical}
 .today .contact small{display:block;font-size:14px;color:var(--muted)}
 .kc-h{--kc:var(--k-helper)}.kc-d{--kc:var(--k-day)}.kc-c{--kc:var(--k-clinic)}.kc-f{--kc:var(--k-family)}.kc-m{--kc:var(--k-med)}.kc-g{--kc:var(--k-trash)}.kc-o{--kc:var(--k-other)}
 
+/* ---- 見る専用（送られてきたリンクを開いたとき）：表と印刷だけ ---- */
+body.viewer .tabs,body.viewer #sharedNote,body.viewer #exampleNote{display:none!important}
+body.viewer .bar h1{font-size:20px}
+.viewerfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:14px}
+.viewerfoot .spacer{flex:1}
+#printBtn{font-size:18px;padding:12px 24px}
+#weekList{display:none;gap:12px}
+.wl-range{margin:0;font-weight:700;font-size:17px}
+.wl-day{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.wl-day h3{margin:0;padding:8px 14px;font-size:22px;background:var(--soft);display:flex;gap:10px;align-items:center}
+.wl-day.sat h3{color:var(--sat)}.wl-day.sun h3{color:var(--sun)}
+.wl-day.is-today{border:3px solid var(--accent)}
+.wl-today{font-size:14px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 10px;letter-spacing:.1em}
+.wl-day ul{list-style:none;margin:0;padding:10px 12px;display:grid;gap:10px}
+.wl-day li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 14px;align-items:baseline;border-left:6px solid var(--kc);padding:2px 10px}
+.wl-day .t{font-size:22px;font-weight:700;min-width:3.2em;font-variant-numeric:tabular-nums;line-height:1.2}
+.wl-day .x{font-size:20px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.wl-day .k{display:block;font-size:13px;color:var(--kc);font-weight:700}
+.wl-none{margin:0;padding:10px 14px;color:var(--muted);font-size:17px}
+.wl-contact{background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-size:20px;font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}
+.wl-contact small{display:block;font-size:14px;color:var(--muted)}
+@media (max-width:760px){
+  body.viewer #paneWeek .scroller{display:none}
+  body.viewer #weekList{display:grid}
+  body.viewer #prevWeek,body.viewer #nextWeek,body.viewer #thisWeek{padding:8px 12px;font-size:15px}
+  body.viewer .sheettools .spacer{flex-basis:100%;height:0}
+  body.viewer #printBtn{flex:1}
+}
+
 footer{color:var(--muted);font-size:13px}
 footer .wrap{padding-block:0 32px}
 
@@ -187,8 +216,9 @@ footer .wrap{padding-block:0 32px}
 @media print{
   :root{color-scheme:light}
   body{background:#fff;padding:0}
-  .bar,.note,.sheettools,#paneEdit,#paneToday,footer{display:none!important}
+  .bar,.note,.sheettools,#paneEdit,#paneToday,footer,#weekList,.viewerfoot{display:none!important}
   #paneWeek{display:block!important}
+  #paneWeek .scroller{display:block!important}
   main .wrap{padding:0;max-width:none;display:block}
   .scroller{overflow:visible}
   .sheet{width:100%;min-width:0;box-shadow:none;padding:0;zoom:var(--fit,1);-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -207,7 +237,7 @@ footer .wrap{padding-block:0 32px}
 <body>
 <header class="bar">
   <div class="wrap">
-    <h1>予定表メーカー</h1>
+    <h1 id="barTitle">予定表メーカー</h1>
     <nav class="tabs" role="tablist" aria-label="画面の切り替え">
       <button id="tabEdit" role="tab" aria-selected="true" aria-controls="paneEdit">作る</button>
       <button id="tabWeek" role="tab" aria-selected="false" aria-controls="paneWeek">週の表</button>
@@ -293,6 +323,7 @@ footer .wrap{padding-block:0 32px}
         </label>
         <button class="btn primary" type="button" id="printBtn">印刷する</button>
       </div>
+      <div id="weekList" aria-label="この週の予定"></div>
       <div class="scroller"><div class="sheet" id="sheet" data-size="m"></div></div>
       <p class="hint noprint" style="margin:0;color:var(--muted);font-size:14px">A4横で印刷されます。右上のQRをスマホで読むと、この予定表が開きます。<b id="fitNote"></b></p>
     </section>
@@ -315,6 +346,12 @@ footer .wrap{padding-block:0 32px}
         <div class="contact" id="tContact" hidden></div>
       </div>
     </section>
+
+    <div class="viewerfoot" id="viewerFoot" hidden>
+      <button class="btn quiet" type="button" id="viewOther"></button>
+      <span class="spacer"></span>
+      <button class="btn quiet" type="button" id="toEdit">この予定表を直す・自分用に作る</button>
+    </div>
   </div>
 </main>
 <footer><div class="wrap">ネットにつながっていなくても使えます（一度開いたあと）。予定はリンクの中とこの端末の下書きにだけあります。</div></footer>
@@ -518,8 +555,31 @@ footer .wrap{padding-block:0 32px}
 
   // ---------- 週の表 ----------
   let sheetRun=0;
+  // スマホで見るとき用：曜日ごとの縦の一覧（印刷には使わない）
+  function renderWeekList(){
+    const box=$("#weekList"); box.textContent="";
+    const start=weekStart(), todayKey=ymd(new Date());
+    box.append(el("p",{class:"wl-range",text:start.getFullYear()+"年 "+md(start)+"（月）〜 "+md(addDays(start,6))+"（日）"}));
+    for(let i=0;i<7;i++){
+      const d=addDays(start,i), list=itemsOn(d), isToday=ymd(d)===todayKey;
+      const h=el("h3",{},[document.createTextNode(md(d)+"（"+WD[i]+"）")]);
+      if(isToday) h.append(el("span",{class:"wl-today",text:"きょう"}));
+      let body;
+      if(list.length){
+        body=el("ul");
+        for(const e of list) body.append(el("li",{class:"kc-"+e.k},[
+          el("span",{class:"t",text:e.h||"—"}),
+          el("span",{},[el("span",{class:"k",text:kindName(e.k)}),el("span",{class:"x",text:e.x})])
+        ]));
+      }else body=el("p",{class:"wl-none",text:"予定なし"});
+      box.append(el("section",{class:"wl-day "+wdClass(i)+(isToday?" is-today":"")},[h,body]));
+    }
+    if(data.c) box.append(el("div",{class:"wl-contact"},[el("small",{text:"困ったときの連絡先"}),document.createTextNode(data.c)]));
+  }
+
   async function renderSheet(){
     const run=++sheetRun;
+    renderWeekList();
     let svg=""; try{ svg=qrSvg(await qrParts(false)); }catch(e){}
     if(run!==sheetRun) return;   // 続けて呼ばれたら最後の1回だけ描く
     const s=$("#sheet"), start=weekStart(), end=addDays(start,6), todayKey=ymd(new Date());
@@ -616,12 +676,32 @@ footer .wrap{padding-block:0 32px}
       const on=t==="#tab"+which; $(t).setAttribute("aria-selected",String(on)); $(p).hidden=!on;
     }
     clearInterval(clockTimer);
+    $("#viewOther").textContent=which==="Today"?"この週の予定を見る":"今日の予定だけを見る";
     if(which==="Week") renderSheet();
     if(which==="Today"){ renderToday(); clockTimer=setInterval(renderToday,30000); }
   }
   $("#tabEdit").onclick=()=>show("Edit");
   $("#tabWeek").onclick=()=>show("Week");
   $("#tabToday").onclick=()=>show("Today");
+
+  // ---------- 見る専用 ----------
+  // 送られてきたリンクを開いた人には、作る道具を隠して「表と印刷」だけを出す
+  function enterViewer(){
+    document.body.classList.add("viewer");
+    $("#viewerFoot").hidden=false;
+    $("#barTitle").textContent=data.t||"予定表";
+    document.title=data.t||"予定表";
+  }
+  function leaveViewer(){
+    document.body.classList.remove("viewer");
+    $("#viewerFoot").hidden=true;
+    $("#barTitle").textContent="予定表メーカー";
+    document.title="予定表メーカー";
+    $("#sharedNote").hidden=false;
+    show("Edit"); window.scrollTo(0,0);
+  }
+  $("#toEdit").onclick=leaveViewer;
+  $("#viewOther").onclick=()=>{ show($("#paneToday").hidden?"Today":"Week"); window.scrollTo(0,0); };
 
   // ---------- ボタン ----------
   $("#fTitle").oninput=e=>{data.t=e.target.value;changed();};
@@ -676,7 +756,7 @@ footer .wrap{padding-block:0 32px}
     if(!data) data=loadDraft();
     if(!data){ data=clean(example()); isExample=true; $("#exampleNote").hidden=false; }
     fillHeader(); renderEntries();
-    if(hp.p && data) show(hp.view==="today"?"Today":"Week"); else show("Edit");
+    if(hp.p && !$("#sharedNote").hidden){ enterViewer(); show(hp.view==="today"?"Today":"Week"); } else show("Edit");
   })();
 
   if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
