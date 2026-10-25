@@ -1,5 +1,5 @@
-// 予定表メーカー：一度開いたら、ページと部品を端末に保存してオフラインでも開けるようにする
-const VERSION = "yotei-hyo-v5";
+// つたえる帳（予定表・メモ）：一度開いたら、ページと部品を端末に保存してオフラインでも開けるようにする
+const VERSION = "yotei-hyo-v6";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./lib/qrcode.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const FONTS = "yotei-hyo-fonts";
 
@@ -33,7 +33,7 @@ self.addEventListener("fetch", e => {
   if (url.origin !== location.origin) return;
 
   // ページ：ネットがあれば最新、3秒待っても来なければ（圏外なら）保存したもの
-  // ※予定はURLの「#」より後ろに入っているので、サーバーには届かない
+  // ※予定やメモはURLの「#」より後ろに入っているので、サーバーには届かない
   if (req.mode === "navigate") {
     e.respondWith((async () => {
       const cached = await caches.match("./index.html");

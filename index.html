@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>予定表メーカー</title>
-<meta name="description" content="大きな字の週間予定表を作って印刷したり、リンクで家族に送ったりできます。データはリンクの中だけに入り、どこにも保存されません。">
+<title>つたえる帳</title>
+<meta name="description" content="大きな字の週間予定表や、伝えたいことを書いたメモを作って、リンクで送ったり印刷したりできます。中身はリンクの中だけに入り、どこにも保存されません。">
 <meta name="theme-color" content="#1d5a6e">
-<!-- LINEなどでリンクを送ったときのカード。予定は「#」より後ろにあるのでカードには出ない（どの予定表でも同じカード） -->
+<!-- LINEなどでリンクを送ったときのカード。予定やメモは「#」より後ろにあるのでカードには出ない（どのリンクでも同じカード） -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="予定表">
-<meta property="og:description" content="開くと、1週間の予定が大きな字で見られます。そのまま印刷もできます。">
+<meta property="og:title" content="つたえる帳">
+<meta property="og:description" content="予定やお知らせが、大きな字で見やすく書いてあります。そのまま印刷もできます。">
 <meta property="og:image" content="https://yannsi.github.io/yotei-hyo/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="予定表">
+<meta property="og:image:alt" content="つたえる帳">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -22,7 +22,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
 <style>
-/* 台所の壁に貼る紙のカレンダー。画面は「作る道具」、印刷は「貼る紙」。曜日の色は日本のカレンダーの決まり（土＝青、日＝赤）に合わせる */
+/* つたえる帳：台所の壁に貼る紙のカレンダーと一筆箋。画面は「作る道具」、印刷は「貼る紙」。
+   曜日の色は日本のカレンダーの決まり（土＝青、日＝赤）。メモのいちばん伝えたいことは付せんの黄色 */
 :root{
   --paper:#ffffff;
   --desk:#eef2f3;
@@ -36,6 +37,7 @@
   --sun:#c8322b;
   --warn-bg:#fff4d6;
   --warn-ink:#6b4a00;
+  --hi:#fff1b8; --hi-line:#e0b400; --ok:#2c7a46;
   --k-helper:#1f6fb2; --k-day:#2c8a4b; --k-clinic:#c8322b; --k-family:#c56a12; --k-med:#7a4bb0; --k-trash:#5e6b70; --k-other:#3f5258;
   --font:"BIZ UDPGothic","BIZ UDゴシック","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
   color-scheme:light;
@@ -44,7 +46,7 @@
   :root:not([data-theme="light"]){
     --paper:#1c2427; --desk:#121819; --ink:#e8eef0; --muted:#9db0b5; --line:#34444a;
     --accent:#6fb6cc; --accent-ink:#0d1a1e; --soft:#22333a; --sat:#7fb0ff; --sun:#ff8a80;
-    --warn-bg:#3a2f12; --warn-ink:#ffdf8a;
+    --warn-bg:#3a2f12; --warn-ink:#ffdf8a; --hi:#4a3d10; --hi-line:#d9b23a; --ok:#6cc48a;
     --k-helper:#6aa8e6; --k-day:#6cc48a; --k-clinic:#ff8a80; --k-family:#f0a65c; --k-med:#b896e8; --k-trash:#a3b1b5; --k-other:#b0c0c4;
     color-scheme:dark;
   }
@@ -52,7 +54,7 @@
 :root[data-theme="dark"]{
   --paper:#1c2427; --desk:#121819; --ink:#e8eef0; --muted:#9db0b5; --line:#34444a;
   --accent:#6fb6cc; --accent-ink:#0d1a1e; --soft:#22333a; --sat:#7fb0ff; --sun:#ff8a80;
-  --warn-bg:#3a2f12; --warn-ink:#ffdf8a;
+  --warn-bg:#3a2f12; --warn-ink:#ffdf8a; --hi:#4a3d10; --hi-line:#d9b23a; --ok:#6cc48a;
   --k-helper:#6aa8e6; --k-day:#6cc48a; --k-clinic:#ff8a80; --k-family:#f0a65c; --k-med:#b896e8; --k-trash:#a3b1b5; --k-other:#b0c0c4;
   color-scheme:dark;
 }
@@ -217,6 +219,71 @@ body.viewer .bar h1{font-size:20px}
   body.viewer #printBtn{flex:1}
 }
 
+/* ---- メモ：書く ---- */
+.editgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.editgrid{grid-template-columns:1fr}}
+.col{display:grid;gap:20px;min-width:0}
+.count{font-weight:400;font-size:12px;justify-self:end}
+.checkrows{display:grid;gap:8px}
+.checkrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.checkrow .del{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 12px;color:var(--muted)}
+.previewcol{position:sticky;top:12px;display:grid;gap:8px}
+@media (max-width:900px){.previewcol{position:static}}
+.preview-label{margin:0;font-size:14px;font-weight:700;color:var(--muted)}
+#mQr svg{width:180px;height:180px}
+
+/* ---- メモ1枚（受け取った人に見えるもの。印刷もこれ） ---- */
+.memo{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(18px,4vw,32px);display:grid;gap:clamp(16px,3vw,24px);
+  box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 28px rgba(0,0,0,.07);--s:1;min-width:0;position:relative}
+.memo[data-size="l"]{--s:1.2}
+.memo[data-size="xl"]{--s:1.45}
+.memo .to{margin:0;font-size:calc(clamp(20px,4.6vw,26px)*var(--s));font-weight:700;overflow-wrap:anywhere;padding-right:var(--qrpad,0)}
+.memo .main{margin:0;background:var(--hi);border-left:10px solid var(--hi-line);border-radius:8px;padding:clamp(14px,3vw,20px) clamp(14px,3vw,22px);
+  font-size:calc(clamp(26px,6.2vw,40px)*var(--s));font-weight:700;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.memo .body{margin:0;font-size:calc(clamp(19px,4.4vw,24px)*var(--s));line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere}
+.memo .checks{display:grid;gap:10px}
+.memo .checks h3{margin:0;font-size:calc(clamp(16px,3.6vw,19px)*var(--s));color:var(--muted)}
+.memo .checks ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.memo .checks label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;cursor:pointer;
+  border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-size:calc(clamp(20px,4.6vw,26px)*var(--s));font-weight:700;line-height:1.35}
+.memo .checks input{position:absolute;opacity:0;width:1px;height:1px}
+.memo .checks .box{width:calc(32px*var(--s));height:calc(32px*var(--s));border:3px solid var(--ink);border-radius:6px;display:grid;place-items:center}
+.memo .checks .box::after{content:"";width:40%;height:70%;border:solid #fff;border-width:0 5px 5px 0;transform:translateY(-12%) rotate(45deg);opacity:0}
+.memo .checks input:checked+.box{background:var(--ok);border-color:var(--ok)}
+.memo .checks input:checked+.box::after{opacity:1}
+.memo .checks input:checked~.ct{color:var(--muted);text-decoration:line-through;text-decoration-thickness:2px}
+.memo .checks input:focus-visible+.box{outline:3px solid var(--accent);outline-offset:3px}
+.memo .checks .ct{overflow-wrap:anywhere}
+.memo .meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;border-top:2px solid var(--line);padding-top:12px;
+  font-size:calc(clamp(16px,3.6vw,20px)*var(--s));color:var(--muted);font-weight:700}
+.memo .meta .from{color:var(--ink);font-size:calc(clamp(18px,4vw,22px)*var(--s))}
+.memo .qr{display:none}
+.memo .empty{color:var(--muted)}
+
+/* ---- メモを見る（送られてきたリンク） ---- */
+#paneMemoView{max-width:760px;width:100%;margin:0 auto;display:grid;gap:16px}
+.viewtools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.viewtools .spacer{flex:1}
+.viewtools select{width:auto}
+#mvPrint{font-size:18px;padding:12px 24px}
+@media (max-width:520px){#mvPrint{flex:1}}
+.viewerfoot p{margin:0;flex:1 1 260px}
+
+/* 印刷で1枚に収まるかを画面の裏で測るための、印刷と同じ文字の大きさ */
+.printsim{position:absolute;left:-9999px;top:0;width:687px;visibility:hidden}
+.printsim .memo{border:2px solid #222;padding:10mm;gap:7mm;box-shadow:none}
+.printsim .memo .to{font-size:calc(24pt*var(--s))}
+.printsim .memo .main{font-size:calc(30pt*var(--s))}
+.printsim .memo .body{font-size:calc(17pt*var(--s))}
+.printsim .memo .checks label{font-size:calc(18pt*var(--s))}
+.printsim .memo .checks h3{font-size:calc(13pt*var(--s))}
+.printsim .memo .meta{font-size:calc(13pt*var(--s))}
+.printsim .memo .meta .from{font-size:calc(16pt*var(--s))}
+.printsim .memo .qr{display:flex;position:absolute;top:8mm;right:8mm}
+.printsim .memo .qr svg{width:26mm;height:26mm}
+.printsim .memo.hasqr{--qrpad:44mm}
+.printsim .memo.hasqr .to{min-height:26mm}
+
 footer{color:var(--muted);font-size:13px}
 footer .wrap{padding-block:0 32px}
 
@@ -225,7 +292,7 @@ footer .wrap{padding-block:0 32px}
 @media print{
   :root{color-scheme:light}
   body{background:#fff;padding:0}
-  .bar,.note,.sheettools,#paneEdit,#paneToday,footer,#weekList,.viewerfoot{display:none!important}
+  .bar,.note,.sheettools,.viewtools,#paneEdit,#paneToday,footer,#weekList,.viewerfoot{display:none!important}
   #paneWeek{display:block!important}
   #paneWeek .scroller{display:block!important}
   main .wrap{padding:0;max-width:none;display:block}
@@ -239,6 +306,24 @@ footer .wrap{padding-block:0 32px}
   .grid7.split .day li{padding:2px 5px}
   .sheet[data-size="xl"] .head h2{font-size:30px}
   .sheet[data-size="xl"]{gap:8px}
+  /* メモ：「印刷する」を押したときだけ body に printmemo が付き、用紙もA4縦に切り替わる */
+  #paneMemo,#paneMemoView{display:none!important}
+  body.printmemo #paneWeek{display:none!important}
+  body.printmemo #paneMemoView{display:block!important;max-width:none}
+  .memo{--paper:#fff;--ink:#111;--muted:#444;--line:#999;--hi:#fff1b8;--hi-line:#d4a800;--ok:#2c7a46;background:#fff;color:#111;
+    border:2px solid #222;box-shadow:none;border-radius:6px;padding:10mm;gap:7mm;-webkit-print-color-adjust:exact;print-color-adjust:exact;zoom:var(--fit,1)}
+  .memo .to{font-size:calc(24pt*var(--s))}
+  .memo .main{font-size:calc(30pt*var(--s))}
+  .memo .body{font-size:calc(17pt*var(--s))}
+  .memo .checks label{font-size:calc(18pt*var(--s));break-inside:avoid}
+  .memo .checks h3{font-size:calc(13pt*var(--s))}
+  .memo .meta{font-size:calc(13pt*var(--s))}
+  .memo .meta .from{font-size:calc(16pt*var(--s))}
+  .memo .qr{display:flex;position:absolute;top:8mm;right:8mm;gap:6px;align-items:center;font-size:8pt;color:#444;font-weight:700;line-height:1.35}
+  .memo .qr span{max-width:9em;text-align:right}
+  .memo .qr svg{width:26mm;height:26mm;display:block}
+  .memo.hasqr{--qrpad:44mm}
+  .memo.hasqr .to{min-height:26mm}
 }
 @media (prefers-reduced-motion:no-preference){.tabs button,.btn,.days button{transition:background .15s,color .15s}}
 </style>
@@ -246,27 +331,27 @@ footer .wrap{padding-block:0 32px}
 <body>
 <header class="bar">
   <div class="wrap">
-    <h1 id="barTitle">予定表メーカー</h1>
+    <h1 id="barTitle">つたえる帳</h1>
     <nav class="tabs" role="tablist" aria-label="画面の切り替え">
-      <button id="tabEdit" role="tab" aria-selected="true" aria-controls="paneEdit">作る</button>
+      <button id="tabEdit" role="tab" aria-selected="true" aria-controls="paneEdit">予定</button>
       <button id="tabWeek" role="tab" aria-selected="false" aria-controls="paneWeek">週の表</button>
       <button id="tabToday" role="tab" aria-selected="false" aria-controls="paneToday">今日</button>
+      <button id="tabMemo" role="tab" aria-selected="false" aria-controls="paneMemo">メモ</button>
     </nav>
   </div>
 </header>
 
 <main>
   <div class="wrap">
-    <div class="note" id="exampleNote" hidden>
-      <span>いま表示しているのは<b>例</b>です。書きかえるか、まっさらにして始めてください。</span>
-      <button id="clearAll" type="button">まっさらにする</button>
-    </div>
-    <div class="note" id="sharedNote" hidden>
-      <span>送られてきたリンクの予定表を開いています。ここで直しても、送った人の予定表は変わりません。</span>
-    </div>
-
-    <!-- ===== 作る ===== -->
+    <!-- ===== 予定（作る） ===== -->
     <section id="paneEdit" role="tabpanel" aria-labelledby="tabEdit" style="display:grid;gap:20px">
+      <div class="note" id="exampleNote" hidden>
+        <span>いま表示しているのは<b>例</b>です。書きかえるか、まっさらにして始めてください。</span>
+        <button id="clearAll" type="button">まっさらにする</button>
+      </div>
+      <div class="note" id="sharedNote" hidden>
+        <span>送られてきたリンクの予定表を開いています。ここで直しても、送った人の予定表は変わりません。</span>
+      </div>
       <div class="panel">
         <div class="row2">
           <label class="f">予定表の名前
@@ -356,6 +441,97 @@ footer .wrap{padding-block:0 32px}
       </div>
     </section>
 
+    <!-- ===== メモ（書く） ===== -->
+    <section id="paneMemo" role="tabpanel" aria-labelledby="tabMemo" hidden style="display:grid;gap:20px">
+      <div class="note" id="mExampleNote" hidden>
+        <span>いま入っているのは<b>例</b>です。書きかえるか、まっさらにして始めてください。</span>
+        <button id="mClearAll" type="button">まっさらにする</button>
+      </div>
+      <div class="note" id="mSharedNote" hidden>
+        <span>送られてきたメモをもとに書いています。ここで直しても、送った人のメモは変わりません。</span>
+      </div>
+      <div class="editgrid">
+        <div class="col">
+          <div class="panel">
+            <h2>メモを書く</h2>
+            <div class="row2" style="grid-template-columns:1fr 1fr">
+              <label class="f">だれへ
+                <input id="mTo" type="text" maxlength="30" placeholder="例：お母さん">
+              </label>
+              <label class="f">だれから
+                <input id="mFrom" type="text" maxlength="30" placeholder="例：長男">
+              </label>
+            </div>
+            <label class="f">いちばん伝えたいこと（黄色で大きく出ます）
+              <textarea id="mMain" rows="2" maxlength="80" placeholder="例：あしたは9時にお迎えが来ます"></textarea>
+              <span class="count" id="mcMain"></span>
+            </label>
+            <label class="f">くわしく（なくてもかまいません）
+              <textarea id="mBody" rows="5" maxlength="600" placeholder="例：朝ごはんのあと、玄関で待っていてください。"></textarea>
+              <span class="count" id="mcBody"></span>
+            </label>
+            <div style="display:grid;gap:8px">
+              <span style="font-size:14px;color:var(--muted);font-weight:700">確認すること・持ち物（受け取った人がチェックできます）</span>
+              <div class="checkrows" id="mChecks"></div>
+              <div class="actions"><button class="btn" type="button" id="mAddCheck">＋ 1つ足す</button></div>
+            </div>
+            <label class="f" style="max-width:260px">文字の大きさ
+              <select id="mSize">
+                <option value="m">ふつう</option>
+                <option value="l">大きい</option>
+                <option value="xl">特大</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="panel">
+            <h2>送る・残す</h2>
+            <p class="hint">メモはこのリンクの中にだけ入ります。サーバーにもこの端末の外にも保存されません。リンクを手にした人は誰でも読めるので、見られて困ることは書かないでください。</p>
+            <div class="actions">
+              <button class="btn primary" type="button" id="mMakeLink">送るためのリンクを作る</button>
+              <button class="btn" type="button" id="mGoPrint">印刷する</button>
+            </div>
+            <div class="share" id="mShareBox" hidden>
+              <div style="display:grid;gap:8px;min-width:0">
+                <textarea id="mShareUrl" readonly aria-label="作ったリンク"></textarea>
+                <div class="actions">
+                  <button class="btn primary" type="button" id="mCopyLink">リンクをコピー</button>
+                  <button class="btn" type="button" id="mShareLink" hidden>LINEなどで送る</button>
+                </div>
+                <div class="status" id="mShareStatus" role="status"></div>
+              </div>
+              <div class="qrbox"><div id="mQr"></div><span>スマホのカメラで読むと<br>このメモが開きます</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="previewcol">
+          <p class="preview-label">受け取った人には、こう見えます</p>
+          <div id="mPreview"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== メモを見る（送られてきたリンク。印刷もここから） ===== -->
+    <section id="paneMemoView" hidden>
+      <div class="viewtools">
+        <label class="f" style="grid-auto-flow:column;align-items:center;gap:6px">文字
+          <select id="mvSize">
+            <option value="m">ふつう</option>
+            <option value="l">大きい</option>
+            <option value="xl">特大</option>
+          </select>
+        </label>
+        <span class="spacer"></span>
+        <button class="btn primary" type="button" id="mvPrint">印刷する</button>
+      </div>
+      <div id="mvCard"></div>
+      <div class="viewerfoot">
+        <p>チェックの印は、この端末にだけ残ります。送った人には届きません。</p>
+        <button class="btn quiet" type="button" id="mvToEdit">このメモをもとに書く・自分でも作る</button>
+      </div>
+    </section>
+
     <div class="viewerfoot" id="viewerFoot" hidden>
       <button class="btn quiet" type="button" id="viewOther"></button>
       <span class="spacer"></span>
@@ -363,7 +539,7 @@ footer .wrap{padding-block:0 32px}
     </div>
   </div>
 </main>
-<footer><div class="wrap">ネットにつながっていなくても使えます（一度開いたあと）。予定はリンクの中とこの端末の下書きにだけあります。</div></footer>
+<footer><div class="wrap">ネットにつながっていなくても使えます（一度開いたあと）。予定やメモはリンクの中とこの端末の下書きにだけあります。</div></footer>
 
 <script src="lib/qrcode.js"></script>
 <script>
@@ -469,13 +645,13 @@ footer .wrap{padding-block:0 32px}
   }
 
   // ---------- QR（SVG） ----------
-  function qrSvg(parts){
+  function qrSvg(parts,label="この予定表を開くQRコード"){
     for(const ecc of ["L"]){
       try{
         const q=qrcode(0,ecc); q.addData(parts[0],"Byte"); if(parts[1]) q.addData(parts[1],"Numeric"); q.make();
         const n=q.getModuleCount(), qz=4, size=n+qz*2; let d="";
         for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+="M"+(c+qz)+" "+(r+qz)+"h1v1h-1z";
-        return '<svg data-n="'+size+'" viewBox="0 0 '+size+' '+size+'" shape-rendering="crispEdges" role="img" aria-label="この予定表を開くQRコード"><rect width="'+size+'" height="'+size+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+        return '<svg data-n="'+size+'" viewBox="0 0 '+size+' '+size+'" shape-rendering="crispEdges" role="img" aria-label="'+label+'"><rect width="'+size+'" height="'+size+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
       }catch(e){}
     }
     return "";
@@ -681,17 +857,19 @@ footer .wrap{padding-block:0 32px}
 
   // ---------- タブ ----------
   function show(which){
-    for(const [t,p] of [["#tabEdit","#paneEdit"],["#tabWeek","#paneWeek"],["#tabToday","#paneToday"]]){
+    for(const [t,p] of [["#tabEdit","#paneEdit"],["#tabWeek","#paneWeek"],["#tabToday","#paneToday"],["#tabMemo","#paneMemo"]]){
       const on=t==="#tab"+which; $(t).setAttribute("aria-selected",String(on)); $(p).hidden=!on;
     }
     clearInterval(clockTimer);
     $("#viewOther").textContent=which==="Today"?"この週の予定を見る":"今日の予定だけを見る";
     if(which==="Week") renderSheet();
     if(which==="Today"){ renderToday(); clockTimer=setInterval(renderToday,30000); }
+    if(which==="Memo"){ renderMemoPreview(); scheduleMemoView(); }
   }
   $("#tabEdit").onclick=()=>show("Edit");
   $("#tabWeek").onclick=()=>show("Week");
   $("#tabToday").onclick=()=>show("Today");
+  $("#tabMemo").onclick=()=>show("Memo");
 
   // ---------- 見る専用 ----------
   // 送られてきたリンクを開いた人には、作る道具を隠して「表と印刷」だけを出す
@@ -704,8 +882,8 @@ footer .wrap{padding-block:0 32px}
   function leaveViewer(){
     document.body.classList.remove("viewer");
     $("#viewerFoot").hidden=true;
-    $("#barTitle").textContent="予定表メーカー";
-    document.title="予定表メーカー";
+    $("#barTitle").textContent="つたえる帳";
+    document.title="つたえる帳";
     $("#sharedNote").hidden=false;
     show("Edit"); window.scrollTo(0,0);
   }
@@ -753,7 +931,169 @@ footer .wrap{padding-block:0 32px}
   $("#nextDay").onclick=()=>{dayOffset++;renderToday();};
   $("#toDay").onclick=()=>{dayOffset=0;renderToday();};
   $("#wakeBtn").onclick=toggleWake;
-  window.addEventListener("beforeprint",()=>{ if($("#paneWeek").hidden){ $("#paneWeek").hidden=false; } });
+  // 印刷：メモを見ている・書いているときはメモ（A4縦）、それ以外は週の表（A4横）
+  window.addEventListener("beforeprint",()=>{
+    if(memoViewer || !$("#paneMemo").hidden){ startMemoPrint(); return; }
+    if($("#paneWeek").hidden){ $("#paneWeek").hidden=false; }
+  });
+  window.addEventListener("afterprint",endMemoPrint);
+
+  // ================= メモ =================
+  // {v:1, to:だれへ, f:だれから, m:いちばん伝えたいこと, b:くわしく, c:[確認すること], s:"m"|"l"|"xl", d:"YYYY-MM-DD"(書いた日)}
+  // 送るリンクは「#m=」（予定表は「#p=」）
+  const MDRAFT="tsutaerucho-memo-draft-v1";
+  const JWD=["日","月","火","水","木","金","土"];
+  const jpDate=s=>{ const d=parseYmd(s); return d?(d.getMonth()+1)+"月"+d.getDate()+"日（"+JWD[d.getDay()]+"）":""; };
+  function memoExample(){
+    return {v:1,to:"お母さん",f:"長男",m:"あしたは9時に\nデイサービスのお迎えが来ます",
+      b:"朝ごはんのあと、玄関で待っていてください。\n雨の予報なので、上着を一枚持っていくと安心です。",
+      c:["保険証","お薬手帳","上着"],s:"m",d:ymd(new Date())};
+  }
+  function memoClean(o){
+    o=o||{};
+    return {v:1,to:String(o.to||"").slice(0,30),f:String(o.f||"").slice(0,30),m:String(o.m||"").slice(0,80),b:String(o.b||"").slice(0,600),
+      c:(Array.isArray(o.c)?o.c:[]).slice(0,12).map(x=>String(x||"").slice(0,40)),
+      s:["m","l","xl"].includes(o.s)?o.s:"m",d:/^\d{4}-\d{2}-\d{2}$/.test(o.d)?o.d:ymd(new Date())};
+  }
+  let memo=null, memoIsExample=false, memoViewer=false, memoKey="";
+  const pageBase=()=>location.origin+location.pathname;
+  async function memoUrl(){ return pageBase()+"#m="+await pack(memo); }
+  async function memoQrParts(){ const {z,bytes}=await packBytes(memo); return [pageBase()+"#m="+(z?"2":"3"), toDigits(bytes)]; }
+  function saveMemoDraft(){ try{ localStorage.setItem(MDRAFT,JSON.stringify(memo)); }catch(e){} }
+  function loadMemoDraft(){ try{ const s=localStorage.getItem(MDRAFT); return s?memoClean(JSON.parse(s)):null; }catch(e){ return null; } }
+  // チェックの印：メモごとに分けて、この端末にだけ残す
+  function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); }
+  function loadChecks(){ try{ return JSON.parse(localStorage.getItem("tsutaerucho-check:"+memoKey)||"[]"); }catch(e){ return []; } }
+  function saveChecks(a){ try{ localStorage.setItem("tsutaerucho-check:"+memoKey,JSON.stringify(a)); }catch(e){} }
+
+  // メモ1枚を描く（見本・受け取った人の画面・印刷で共通）
+  function memoCard(o,{interactive=false,size=o.s,qr=""}={}){
+    const card=el("article",{class:"memo"+(qr?" hasqr":""),"data-size":size});
+    if(qr){ const q=el("div",{class:"qr"},[el("span",{text:"スマホのカメラで読むと、このメモが開きます"})]); q.insertAdjacentHTML("beforeend",qr); card.append(q); }
+    card.append(el("p",{class:"to",text:o.to?o.to+"へ":"メモ"}));
+    const items=o.c.map(x=>x.trim()).filter(Boolean);
+    if(o.m.trim()) card.append(el("p",{class:"main",text:o.m.trim()}));
+    if(o.b.trim()) card.append(el("p",{class:"body",text:o.b.trim()}));
+    if(!o.m.trim()&&!o.b.trim()&&!items.length) card.append(el("p",{class:"body empty",text:"（まだ何も書かれていません）"}));
+    if(items.length){
+      const done=interactive?loadChecks():[];
+      const ul=el("ul");
+      items.forEach((x,i)=>{
+        const cb=el("input",{type:"checkbox"}); cb.checked=!!done[i];
+        if(interactive) cb.addEventListener("change",()=>{ const a=loadChecks(); a[i]=cb.checked; saveChecks(a); });
+        else cb.disabled=true;
+        ul.append(el("li",{},[el("label",{},[cb,el("span",{class:"box","aria-hidden":"true"}),el("span",{class:"ct",text:x})])]));
+      });
+      card.append(el("section",{class:"checks"},[el("h3",{text:"確認すること"}),ul]));
+    }
+    card.append(el("div",{class:"meta"},[
+      el("span",{class:"from",text:o.f?o.f+"より":""}),
+      el("span",{text:o.d?jpDate(o.d)+"に書きました":""})
+    ]));
+    return card;
+  }
+
+  // ---- 書く ----
+  function renderMemoChecks(){
+    const box=$("#mChecks"); box.textContent="";
+    memo.c.forEach((x,i)=>{
+      const inp=el("input",{type:"text",maxlength:"40","aria-label":"確認すること "+(i+1),placeholder:"例：保険証",value:x,oninput:e=>{memo.c[i]=e.target.value;memoChanged();}});
+      box.append(el("div",{class:"checkrow"},[inp,el("button",{type:"button",class:"del",text:"消す","aria-label":"この行を消す",onclick:()=>{memo.c.splice(i,1);memoChanged();renderMemoChecks();}})]));
+    });
+    $("#mAddCheck").disabled=memo.c.length>=12;
+  }
+  function memoCounts(){ $("#mcMain").textContent=memo.m.length+"／80"; $("#mcBody").textContent=memo.b.length+"／600"; }
+  function fillMemoForm(){
+    $("#mTo").value=memo.to; $("#mFrom").value=memo.f; $("#mMain").value=memo.m; $("#mBody").value=memo.b; $("#mSize").value=memo.s;
+    renderMemoChecks(); memoCounts(); $("#mExampleNote").hidden=!memoIsExample;
+  }
+  function renderMemoPreview(){ const p=$("#mPreview"); p.textContent=""; p.append(memoCard(memo)); }
+  function memoChanged(){
+    if(memoIsExample){ memoIsExample=false; $("#mExampleNote").hidden=true; }
+    $("#mShareBox").hidden=true; saveMemoDraft(); memoCounts(); renderMemoPreview(); scheduleMemoView();
+  }
+  const mbind=(id,key)=>{ $(id).addEventListener("input",e=>{memo[key]=e.target.value;memoChanged();}); };
+  mbind("#mTo","to"); mbind("#mFrom","f"); mbind("#mMain","m"); mbind("#mBody","b");
+  $("#mSize").addEventListener("change",e=>{memo.s=e.target.value;memoChanged();});
+  $("#mAddCheck").onclick=()=>{ if(memo.c.length>=12) return; memo.c.push(""); memoChanged(); renderMemoChecks(); const r=$("#mChecks").lastElementChild; r&&r.querySelector("input").focus(); };
+  $("#mClearAll").onclick=()=>{ memo=memoClean({}); memoIsExample=false; saveMemoDraft(); fillMemoForm(); renderMemoPreview(); $("#mTo").focus(); };
+
+  // 送るときにリンクの上に付ける一文：「メモ（お母さんへ）：あしたは9時に…」
+  function memoShareLabel(){
+    const m=memo.m.trim().replace(/\s+/g," ");
+    return "メモ"+(memo.to.trim()?"（"+memo.to.trim()+"へ）":"")+(m?"："+(m.length>30?m.slice(0,30)+"…":m):"");
+  }
+  const memoShareText=()=>memoShareLabel()+"\n"+$("#mShareUrl").value;
+  $("#mMakeLink").onclick=async()=>{
+    memo.d=ymd(new Date()); saveMemoDraft(); renderMemoPreview();
+    const url=await memoUrl();
+    $("#mShareUrl").value=url;
+    $("#mQr").innerHTML=qrSvg(await memoQrParts(),"このメモを開くQRコード")||"<p>長いのでQRに入りません。リンクで送ってください。</p>";
+    const sq=$("#mQr svg"); if(sq){ const w=crispSize(sq,180); sq.style.width=w+"px"; sq.style.height=w+"px"; }
+    $("#mShareBox").hidden=false; $("#mShareStatus").textContent="リンクができました";
+    $("#mShareLink").hidden=!navigator.share;
+  };
+  $("#mCopyLink").onclick=async()=>{
+    const t=$("#mShareUrl");
+    try{ await navigator.clipboard.writeText(memoShareText()); $("#mShareStatus").textContent="「"+memoShareLabel()+"」という一文を付けてコピーしました。LINEやメールに貼りつけて送れます"; }
+    catch(e){ t.focus(); t.select(); $("#mShareStatus").textContent="選択しました。長押しか Ctrl+C でコピーしてください"; }
+  };
+  $("#mShareLink").onclick=async()=>{ try{ await navigator.share({title:memoShareLabel(),text:memoShareText()}); }catch(e){} };
+
+  // ---- 見る・印刷 ----
+  let memoViewRun=0, memoViewTimer=null;
+  async function renderMemoView(){
+    const run=++memoViewRun;
+    let qr=""; try{ qr=qrSvg(await memoQrParts(),"このメモを開くQRコード"); }catch(e){}
+    if(run!==memoViewRun) return;
+    const v=$("#mvCard"); v.textContent="";
+    v.append(memoCard(memo,{interactive:memoViewer,size:memoViewer?$("#mvSize").value:memo.s,qr}));
+    memoFit();
+  }
+  // 書いている間も、印刷用の1枚を裏で用意しておく（Ctrl+P で印刷されても中身が合うように）
+  function scheduleMemoView(){ clearTimeout(memoViewTimer); memoViewTimer=setTimeout(renderMemoView,300); }
+  // 印刷で1枚に収まるよう、長いときだけ縮める（A4縦・余白14mmの印刷範囲は約687×1016px）
+  function memoFit(){
+    const card=$("#mvCard .memo"); if(!card) return;
+    const sim=el("div",{class:"printsim","aria-hidden":"true"},[card.cloneNode(true)]);
+    document.body.append(sim);
+    // 縮めると1行に入る字が増えて高さも減るので、実際の幅で測りながら倍率を探す
+    const heightAt=z=>{ sim.style.width=(687/z)+"px"; return sim.firstElementChild.offsetHeight*z; };
+    let z=1;
+    if(heightAt(1)>1000){ let lo=0.35,hi=1; for(let i=0;i<9;i++){ const m=(lo+hi)/2; if(heightAt(m)<=1000) lo=m; else hi=m; } z=lo; }
+    sim.remove();
+    card.style.setProperty("--fit",z.toFixed(3));
+  }
+  // 週の表はA4横、メモはA4縦。メモを印刷するときだけ用紙の向きを差し替える
+  function startMemoPrint(){
+    document.body.classList.add("printmemo");
+    if(!$("#memoPage")) document.head.append(el("style",{id:"memoPage",text:"@page{size:A4 portrait;margin:14mm}"}));
+  }
+  function endMemoPrint(){ document.body.classList.remove("printmemo"); const s=$("#memoPage"); if(s) s.remove(); }
+  const printMemo=async()=>{ clearTimeout(memoViewTimer); await renderMemoView(); startMemoPrint(); setTimeout(()=>window.print(),60); };
+  $("#mGoPrint").onclick=printMemo; $("#mvPrint").onclick=printMemo;
+  $("#mvSize").onchange=()=>{ try{ localStorage.setItem("tsutaerucho-memo-size",$("#mvSize").value); }catch(e){} renderMemoView(); };
+
+  // 送られてきたメモのリンクを開いた人には、メモ1枚と印刷だけを出す
+  function enterMemoViewer(){
+    memoViewer=true;
+    document.body.classList.add("viewer");
+    for(const p of ["#paneEdit","#paneWeek","#paneToday","#paneMemo"]) $(p).hidden=true;
+    $("#paneMemoView").hidden=false;
+    const t=memo.to?memo.to+"へのメモ":"メモ";
+    $("#barTitle").textContent=t; document.title=t;
+    let sz=memo.s; try{ const k=localStorage.getItem("tsutaerucho-memo-size"); if(k) sz=k; }catch(e){}
+    $("#mvSize").value=sz;
+    renderMemoView();
+  }
+  $("#mvToEdit").onclick=()=>{
+    memoViewer=false;
+    document.body.classList.remove("viewer");
+    $("#paneMemoView").hidden=true;
+    $("#barTitle").textContent="つたえる帳"; document.title="つたえる帳";
+    $("#mSharedNote").hidden=false;
+    saveMemoDraft(); fillMemoForm(); show("Memo"); window.scrollTo(0,0);
+  };
 
   // 時刻の候補
   const dl=el("datalist",{id:"timeWords"});
@@ -771,6 +1111,14 @@ footer .wrap{padding-block:0 32px}
     if(!data) data=loadDraft();
     if(!data){ data=clean(example()); isExample=true; $("#exampleNote").hidden=false; }
     fillHeader(); renderEntries();
+    // メモ：送られてきたメモがあればそれ、なければ下書き、それもなければ例
+    const mp=new URLSearchParams(location.hash.slice(1)).get("m");
+    let memoFromLink=false;
+    if(mp){ try{ memo=memoClean(await unpack(mp)); memoKey=hashStr(JSON.stringify(memo)); memoFromLink=true; }catch(e){ memo=null; } }
+    if(!memo) memo=loadMemoDraft();
+    if(!memo){ memo=memoClean(memoExample()); memoIsExample=true; }
+    fillMemoForm(); renderMemoPreview();
+    if(memoFromLink){ enterMemoViewer(); return; }
     if(hp.p && !$("#sharedNote").hidden){ enterViewer(); show(hp.view==="today"?"Today":"Week"); } else show("Edit");
   })();
 
