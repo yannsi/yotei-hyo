@@ -202,7 +202,26 @@ textarea{resize:vertical}
 .kc-h{--kc:var(--k-helper)}.kc-d{--kc:var(--k-day)}.kc-c{--kc:var(--k-clinic)}.kc-f{--kc:var(--k-family)}.kc-m{--kc:var(--k-med)}.kc-g{--kc:var(--k-trash)}.kc-o{--kc:var(--k-other)}
 
 /* ---- 見る専用（送られてきたリンクを開いたとき）：表と印刷だけ ---- */
-body.viewer .tabs,body.viewer #sharedNote{display:none!important}
+body.viewer .tabs,body.viewer #sharedNote,body.start .tabs{display:none!important}
+/* 上の「つたえる帳」は最初の画面へ戻るボタン（受け取った人の画面では押せない） */
+.homebtn{all:unset;cursor:pointer;border-radius:6px}
+.homebtn:focus-visible{outline:3px solid var(--accent-ink);outline-offset:3px}
+body.viewer .homebtn{cursor:default}
+
+/* ---- 最初の画面：何を作るか選ぶ ---- */
+#paneStart{display:grid;gap:18px;max-width:860px;width:100%;margin:0 auto;padding-top:8px}
+.start-q{margin:0;font-size:clamp(22px,4.6vw,28px)}
+.start-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:560px){.start-grid{grid-template-columns:1fr}}
+.start-card{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto 1fr auto;column-gap:16px;row-gap:6px;align-items:start;text-align:left;
+  background:var(--paper);color:var(--ink);border:2px solid var(--line);border-radius:16px;padding:22px 20px;min-height:150px}
+.start-card:hover{border-color:var(--accent)}
+.start-ic{grid-row:1/4;width:56px;height:56px;border-radius:14px;background:var(--soft);color:var(--accent);display:grid;place-items:center}
+.start-ic svg{width:34px;height:34px}
+.start-t{font-size:24px;font-weight:700;line-height:1.3}
+.start-d{font-size:15px;color:var(--muted);line-height:1.6}
+.start-draft{justify-self:start;font-size:13px;font-weight:700;color:var(--accent);background:var(--soft);border-radius:999px;padding:2px 10px}
+.start-note{margin:0;color:var(--muted);font-size:14px}
 body.viewer .bar h1{font-size:20px}
 .viewerfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:14px}
 .viewerfoot .spacer{flex:1}
@@ -342,7 +361,7 @@ footer .wrap{padding-block:0 32px}
 <body>
 <header class="bar">
   <div class="wrap">
-    <h1 id="barTitle">つたえる帳</h1>
+    <h1><button class="homebtn" type="button" id="homeBtn" title="最初の画面に戻る"><span id="barTitle">つたえる帳</span></button></h1>
     <nav class="tabs" role="tablist" aria-label="画面の切り替え">
       <button id="tabEdit" role="tab" aria-selected="true" aria-controls="paneEdit">予定</button>
       <button id="tabWeek" role="tab" aria-selected="false" aria-controls="paneWeek">週の表</button>
@@ -354,6 +373,26 @@ footer .wrap{padding-block:0 32px}
 
 <main>
   <div class="wrap">
+    <!-- ===== 最初の画面：何を作るか ===== -->
+    <section id="paneStart" hidden>
+      <h2 class="start-q">何を作りますか？</h2>
+      <div class="start-grid">
+        <button class="start-card" type="button" id="startYotei">
+          <span class="start-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7 14h3M7 17h6"/></svg></span>
+          <span class="start-t">予定表</span>
+          <span class="start-d">1週間の予定を、大きな字の表にします。印刷して貼ったり、リンクで送ったりできます。</span>
+          <span class="start-draft" id="startYoteiDraft" hidden>書きかけがあります</span>
+        </button>
+        <button class="start-card" type="button" id="startMemo">
+          <span class="start-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 11h7M9 15h7M9 19h4"/></svg></span>
+          <span class="start-t">メモ</span>
+          <span class="start-d">伝えたいことを1枚にまとめます。持ち物などは受け取った人がチェックできます。</span>
+          <span class="start-draft" id="startMemoDraft" hidden>書きかけがあります</span>
+        </button>
+      </div>
+      <p class="start-note">上の「つたえる帳」を押すと、いつでもこの画面に戻れます。</p>
+    </section>
+
     <!-- ===== 予定（作る） ===== -->
     <section id="paneEdit" role="tabpanel" aria-labelledby="tabEdit" style="display:grid;gap:20px">
       <div class="note" id="sharedNote" hidden>
@@ -861,6 +900,7 @@ footer .wrap{padding-block:0 32px}
 
   // ---------- タブ ----------
   function show(which){
+    document.body.classList.remove("start"); $("#paneStart").hidden=true;
     for(const [t,p] of [["#tabEdit","#paneEdit"],["#tabWeek","#paneWeek"],["#tabToday","#paneToday"],["#tabMemo","#paneMemo"]]){
       const on=t==="#tab"+which; $(t).setAttribute("aria-selected",String(on)); $(p).hidden=!on;
     }
@@ -875,18 +915,32 @@ footer .wrap{padding-block:0 32px}
   $("#tabToday").onclick=()=>show("Today");
   $("#tabMemo").onclick=()=>show("Memo");
 
+  // ---------- 最初の画面 ----------
+  function showStart(){
+    for(const p of ["#paneEdit","#paneWeek","#paneToday","#paneMemo","#paneMemoView"]) $(p).hidden=true;
+    clearInterval(clockTimer);
+    document.body.classList.add("start"); $("#paneStart").hidden=false;
+    const yoteiDraft=!!(data.t.trim()||data.c.trim()||data.e.length);
+    const memoDraft=!!(memo.to.trim()||memo.f.trim()||memo.m.trim()||memo.b.trim()||memo.c.some(x=>x.trim()));
+    $("#startYoteiDraft").hidden=!yoteiDraft; $("#startMemoDraft").hidden=!memoDraft;
+    window.scrollTo(0,0);
+  }
+  $("#startYotei").onclick=()=>{ show("Edit"); window.scrollTo(0,0); };
+  $("#startMemo").onclick=()=>{ show("Memo"); window.scrollTo(0,0); };
+  $("#homeBtn").onclick=()=>{ if(!document.body.classList.contains("viewer")) showStart(); };
+
   // ---------- 見る専用 ----------
   // 送られてきたリンクを開いた人には、作る道具を隠して「表と印刷」だけを出す
   function enterViewer(){
     document.body.classList.add("viewer");
     $("#viewerFoot").hidden=false;
-    $("#barTitle").textContent=data.t||"予定表";
+    $("#barTitle").textContent=data.t||"予定表"; $("#homeBtn").disabled=true;
     document.title=data.t||"予定表";
   }
   function leaveViewer(){
     document.body.classList.remove("viewer");
     $("#viewerFoot").hidden=true;
-    $("#barTitle").textContent="つたえる帳";
+    $("#barTitle").textContent="つたえる帳"; $("#homeBtn").disabled=false;
     document.title="つたえる帳";
     $("#sharedNote").hidden=false;
     show("Edit"); window.scrollTo(0,0);
@@ -1094,7 +1148,7 @@ footer .wrap{padding-block:0 32px}
     for(const p of ["#paneEdit","#paneWeek","#paneToday","#paneMemo"]) $(p).hidden=true;
     $("#paneMemoView").hidden=false;
     const t=memo.to?memo.to+"へのメモ":"メモ";
-    $("#barTitle").textContent=t; document.title=t;
+    $("#barTitle").textContent=t; document.title=t; $("#homeBtn").disabled=true;
     let sz=memo.s; try{ const k=localStorage.getItem("tsutaerucho-memo-size"); if(k) sz=k; }catch(e){}
     $("#mvSize").value=sz;
     renderMemoView();
@@ -1103,7 +1157,7 @@ footer .wrap{padding-block:0 32px}
     memoViewer=false;
     document.body.classList.remove("viewer");
     $("#paneMemoView").hidden=true;
-    $("#barTitle").textContent="つたえる帳"; document.title="つたえる帳";
+    $("#barTitle").textContent="つたえる帳"; document.title="つたえる帳"; $("#homeBtn").disabled=false;
     $("#mSharedNote").hidden=false;
     saveMemoDraft(); fillMemoForm(); show("Memo"); window.scrollTo(0,0);
   };
@@ -1132,7 +1186,7 @@ footer .wrap{padding-block:0 32px}
     if(!memo) memo=memoClean({});
     fillMemoForm(); renderMemoPreview();
     if(memoFromLink){ enterMemoViewer(); return; }
-    if(hp.p && !$("#sharedNote").hidden){ enterViewer(); show(hp.view==="today"?"Today":"Week"); } else show("Edit");
+    if(hp.p && !$("#sharedNote").hidden){ enterViewer(); show(hp.view==="today"?"Today":"Week"); } else showStart();
   })();
 
   if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
