@@ -1,5 +1,5 @@
 // つたえる帳（予定表・メモ）：一度開いたら、ページと部品を端末に保存してオフラインでも開けるようにする
-const VERSION = "yotei-hyo-v8";
+const VERSION = "yotei-hyo-v9";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./lib/qrcode.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const FONTS = "yotei-hyo-fonts";
 

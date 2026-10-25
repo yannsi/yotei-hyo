@@ -370,6 +370,8 @@ footer .wrap{padding-block:0 32px}
         <div class="entries" id="entries"></div>
         <div class="actions">
           <button class="btn" type="button" id="addEntry">＋ 予定を追加</button>
+          <span style="flex:1"></span>
+          <button class="btn quiet" type="button" id="clearAll">すべて消す</button>
         </div>
       </div>
 
@@ -467,13 +469,17 @@ footer .wrap{padding-block:0 32px}
               <div class="checkrows" id="mChecks"></div>
               <div class="actions"><button class="btn" type="button" id="mAddCheck">＋ 項目を追加</button></div>
             </div>
-            <label class="f" style="max-width:260px">文字の大きさ
-              <select id="mSize">
-                <option value="m">標準</option>
-                <option value="l">大</option>
-                <option value="xl">特大</option>
-              </select>
-            </label>
+            <div class="actions" style="align-items:end">
+              <label class="f" style="width:200px">文字の大きさ
+                <select id="mSize">
+                  <option value="m">標準</option>
+                  <option value="l">大</option>
+                  <option value="xl">特大</option>
+                </select>
+              </label>
+              <span style="flex:1"></span>
+              <button class="btn quiet" type="button" id="mClearAll">すべて消す</button>
+            </div>
           </div>
 
           <div class="panel">
@@ -645,7 +651,15 @@ footer .wrap{padding-block:0 32px}
 
   // ---------- 下書き ----------
   function saveDraft(){ try{ localStorage.setItem(DRAFT,JSON.stringify(data)); }catch(e){} }
-  function loadDraft(){ try{ const s=localStorage.getItem(DRAFT); return s?clean(JSON.parse(s)):null; }catch(e){ return null; } }
+  function loadDraft(){
+    try{
+      const s=localStorage.getItem(DRAFT); if(!s) return null;
+      const d=clean(JSON.parse(s));
+      // 以前の版は例を入れて始めていた。名前に「（例）」が残っている下書きは例のままなので捨てる
+      if(d.t.includes("（例）")){ localStorage.removeItem(DRAFT); return null; }
+      return d;
+    }catch(e){ return null; }
+  }
 
   // ---------- 入力画面 ----------
   const el = (tag,attrs={},kids=[]) => { const n=document.createElement(tag); for(const [k,v] of Object.entries(attrs)){ if(k==="text")n.textContent=v; else if(k.startsWith("on"))n.addEventListener(k.slice(2),v); else n.setAttribute(k,v);} for(const c of kids)n.append(c); return n; };
@@ -874,6 +888,10 @@ footer .wrap{padding-block:0 32px}
   $("#fContact").oninput=e=>{data.c=e.target.value;changed();};
   $("#fWeek").onchange=e=>{data.w=e.target.value;weekOffset=0;changed();};
   $("#fOpenToday").onchange=()=>{linkDirty=true;$("#shareBox").hidden=true;};
+  $("#clearAll").onclick=()=>{
+    if(!confirm("予定表の名前・連絡先・予定をすべて消します。よろしいですか？")) return;
+    data=clean({}); weekOffset=0; saveDraft(); fillHeader(); renderEntries(); changed(); $("#fTitle").focus();
+  };
   $("#addEntry").onclick=()=>{
     data.e.push({k:"h",h:"",x:"",r:"w",d:[wIdx(new Date())]}); changed(); renderEntries();
     const last=$("#entries").lastElementChild; last&&last.querySelector(".x").focus();
@@ -933,7 +951,15 @@ footer .wrap{padding-block:0 32px}
   async function memoUrl(){ return pageBase()+"#m="+await pack(memo); }
   async function memoQrParts(){ const {z,bytes}=await packBytes(memo); return [pageBase()+"#m="+(z?"2":"3"), toDigits(bytes)]; }
   function saveMemoDraft(){ try{ localStorage.setItem(MDRAFT,JSON.stringify(memo)); }catch(e){} }
-  function loadMemoDraft(){ try{ const s=localStorage.getItem(MDRAFT); return s?memoClean(JSON.parse(s)):null; }catch(e){ return null; } }
+  function loadMemoDraft(){
+    try{
+      const s=localStorage.getItem(MDRAFT); if(!s) return null;
+      const m=memoClean(JSON.parse(s));
+      // 以前の版の例が残っている下書きは捨てる
+      if(m.m.includes("デイサービスのお迎えが来ます")||m.b.includes("上着を一枚持っていくと安心です")){ localStorage.removeItem(MDRAFT); return null; }
+      return m;
+    }catch(e){ return null; }
+  }
   // チェックの印：メモごとに分けて、この端末にだけ残す
   function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); }
   function loadChecks(){ try{ return JSON.parse(localStorage.getItem("tsutaerucho-check:"+memoKey)||"[]"); }catch(e){ return []; } }
@@ -987,6 +1013,10 @@ footer .wrap{padding-block:0 32px}
   const mbind=(id,key)=>{ $(id).addEventListener("input",e=>{memo[key]=e.target.value;memoChanged();}); };
   mbind("#mTo","to"); mbind("#mFrom","f"); mbind("#mMain","m"); mbind("#mBody","b");
   $("#mSize").addEventListener("change",e=>{memo.s=e.target.value;memoChanged();});
+  $("#mClearAll").onclick=()=>{
+    if(!confirm("メモをすべて消します。よろしいですか？")) return;
+    memo=memoClean({}); fillMemoForm(); memoChanged(); $("#mTo").focus();
+  };
   $("#mAddCheck").onclick=()=>{ if(memo.c.length>=12) return; memo.c.push(""); memoChanged(); renderMemoChecks(); const r=$("#mChecks").lastElementChild; r&&r.querySelector("input").focus(); };
 
   // 送るときにリンクの上に付ける一文：「メモ（お母さんへ）：あしたは9時に…」
