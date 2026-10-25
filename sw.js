@@ -1,6 +1,6 @@
 // つたえる帳（予定表・メモ）：一度開いたら、ページと部品を端末に保存してオフラインでも開けるようにする
-const VERSION = "yotei-hyo-v9";
-const CORE = ["./", "./index.html", "./manifest.webmanifest", "./lib/qrcode.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
+const VERSION = "yotei-hyo-v10";
+const CORE = ["./", "./index.html", "./memo.html", "./manifest.webmanifest", "./lib/qrcode.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const FONTS = "yotei-hyo-fonts";
 
 self.addEventListener("install", e => {
@@ -36,9 +36,11 @@ self.addEventListener("fetch", e => {
   // ※予定やメモはURLの「#」より後ろに入っているので、サーバーには届かない
   if (req.mode === "navigate") {
     e.respondWith((async () => {
-      const cached = await caches.match("./index.html");
+      // memo.html（メモのリンクの入口）は本体とは別に保存する
+      const key = /\/memo\.html$/.test(url.pathname) ? "./memo.html" : "./index.html";
+      const cached = await caches.match(key);
       const net = fetch(req).then(r => {
-        if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); }
+        if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(key, copy)); }
         return r;
       });
       if (!cached) return net;

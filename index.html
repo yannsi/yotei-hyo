@@ -6,14 +6,17 @@
 <title>つたえる帳</title>
 <meta name="description" content="大きな字の週間予定表や、伝えたいことを書いたメモを作って、リンクで送ったり印刷したりできます。中身はリンクの中だけに入り、どこにも保存されません。">
 <meta name="theme-color" content="#1d5a6e">
-<!-- LINEなどでリンクを送ったときのカード。予定やメモは「#」より後ろにあるのでカードには出ない（どのリンクでも同じカード） -->
+<!-- LINEなどでリンクを送ったときのカード。カードは「#」より前のアドレスだけで決まるので、
+     予定表のリンク（ここ）は「予定表」、メモのリンク（memo.html）は「メモ」のカードを出す。
+     LINEは一度読んだ絵を覚えているので、絵を変えるときはファイル名も変える -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="つたえる帳">
-<meta property="og:description" content="予定やお知らせが、大きな字で見やすく書いてあります。そのまま印刷もできます。">
-<meta property="og:image" content="https://yannsi.github.io/yotei-hyo/og.png">
+<meta property="og:site_name" content="つたえる帳">
+<meta property="og:title" content="予定表">
+<meta property="og:description" content="開くと、1週間の予定が大きな字で見られます。そのまま印刷もできます。">
+<meta property="og:image" content="https://yannsi.github.io/yotei-hyo/og-yotei.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="つたえる帳">
+<meta property="og:image:alt" content="予定表">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -947,9 +950,10 @@ footer .wrap{padding-block:0 32px}
       s:["m","l","xl"].includes(o.s)?o.s:"m",d:/^\d{4}-\d{2}-\d{2}$/.test(o.d)?o.d:ymd(new Date())};
   }
   let memo=null, memoViewer=false, memoKey="";
-  const pageBase=()=>location.origin+location.pathname;
-  async function memoUrl(){ return pageBase()+"#m="+await pack(memo); }
-  async function memoQrParts(){ const {z,bytes}=await packBytes(memo); return [pageBase()+"#m="+(z?"2":"3"), toDigits(bytes)]; }
+  // メモのリンクは memo.html から入る（LINEのカードを「メモ」にするため）。memo.html はすぐこのページへ移る
+  const memoBase=()=>location.origin+location.pathname.replace(/[^/]*$/,"")+"memo.html";
+  async function memoUrl(){ return memoBase()+"#m="+await pack(memo); }
+  async function memoQrParts(){ const {z,bytes}=await packBytes(memo); return [memoBase()+"#m="+(z?"2":"3"), toDigits(bytes)]; }
   function saveMemoDraft(){ try{ localStorage.setItem(MDRAFT,JSON.stringify(memo)); }catch(e){} }
   function loadMemoDraft(){
     try{
