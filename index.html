@@ -1109,14 +1109,14 @@ footer .wrap{padding-block:0 32px}
       catch(e){ data=null; }
     }
     if(!data) data=loadDraft();
-    if(!data){ data=clean(example()); isExample=true; $("#exampleNote").hidden=false; }
+    if(!data) data=clean({});   // はじめはまっさら（例は出さない）
     fillHeader(); renderEntries();
-    // メモ：送られてきたメモがあればそれ、なければ下書き、それもなければ例
+    // メモ：送られてきたメモがあればそれ、なければ下書き、それもなければまっさら
     const mp=new URLSearchParams(location.hash.slice(1)).get("m");
     let memoFromLink=false;
     if(mp){ try{ memo=memoClean(await unpack(mp)); memoKey=hashStr(JSON.stringify(memo)); memoFromLink=true; }catch(e){ memo=null; } }
     if(!memo) memo=loadMemoDraft();
-    if(!memo){ memo=memoClean(memoExample()); memoIsExample=true; }
+    if(!memo) memo=memoClean({});
     fillMemoForm(); renderMemoPreview();
     if(memoFromLink){ enterMemoViewer(); return; }
     if(hp.p && !$("#sharedNote").hidden){ enterViewer(); show(hp.view==="today"?"Today":"Week"); } else show("Edit");
