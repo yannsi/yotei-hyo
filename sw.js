@@ -1,5 +1,5 @@
 // 予定表メーカー：一度開いたら、ページと部品を端末に保存してオフラインでも開けるようにする
-const VERSION = "yotei-hyo-v4";
+const VERSION = "yotei-hyo-v5";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./lib/qrcode.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const FONTS = "yotei-hyo-fonts";
 
@@ -8,9 +8,10 @@ self.addEventListener("install", e => {
 });
 
 self.addEventListener("activate", e => {
+  // 同じ yannsi.github.io にある他の作品の保存は消さない（自分の古い版だけ消す）
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== FONTS).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k.startsWith("yotei-hyo-") && k !== VERSION && k !== FONTS).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
