@@ -82,7 +82,12 @@ button{cursor:pointer}
 /* ---- 上の帯 ---- */
 .bar{background:var(--accent);color:var(--accent-ink)}
 .bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding-block:12px}
-.bar h1{margin:0;font-size:22px;letter-spacing:.04em;margin-right:auto}
+.bar h1{margin:0;font-size:22px;letter-spacing:.04em;margin-right:auto;display:flex;align-items:center;gap:10px}
+.homebtn .back{display:none;font-size:30px;line-height:0;margin-right:6px;position:relative;top:1px}
+body:not(.start):not(.viewer) .homebtn .back{display:inline}
+.barmode{display:none;font-size:14px;font-weight:700;letter-spacing:.06em;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 12px}
+body:not(.start):not(.viewer) .barmode{display:inline-block}
+body.mode-memo .tabs{display:none!important}
 .tabs{display:flex;gap:4px;background:rgba(0,0,0,.18);padding:4px;border-radius:999px}
 .tabs button{border:0;background:transparent;color:inherit;padding:6px 16px;border-radius:999px;font-weight:700;font-size:15px}
 .tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink)}
@@ -138,6 +143,8 @@ textarea{resize:vertical}
 .sheettools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
 .sheettools .spacer{flex:1}
 .sheettools select{width:auto}
+#printBtn{white-space:nowrap}
+@media (max-width:560px){ .sheettools .stepper{flex:1 1 100%} .sheettools .stepper .range{flex:1} .sheettools .spacer{display:none} .sheettools #printBtn{flex:1} }
 .scroller{overflow-x:auto;border-radius:6px}
 .sheet{background:#fff;color:#111;width:1060px;min-width:1060px;margin:0 auto;padding:22px 24px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 28px rgba(0,0,0,.08);display:grid;gap:12px;
   --s:1;font-family:var(--font)}
@@ -191,6 +198,13 @@ textarea{resize:vertical}
 .today{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;gap:18px}
 .today .tnav{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .today .tnav .spacer{flex:1}
+.today .wakerow{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:14px}
+/* 前・次の切り替え：◀ 範囲 ▶ をひとまとまりに */
+.stepper{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:12px;background:var(--paper);overflow:hidden}
+.stepper button{border:0;background:transparent;color:var(--accent);font-size:18px;padding:10px 16px;min-width:48px;cursor:pointer}
+.stepper button:hover{background:var(--soft)}
+.stepper button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.stepper .range{display:flex;align-items:center;justify-content:center;padding:0 6px;font-weight:700;font-size:16px;white-space:nowrap;min-width:9.5em;border-inline:1px solid var(--line);font-variant-numeric:tabular-nums}
 .today .bigdate{font-size:clamp(34px,8vw,64px);font-weight:700;line-height:1.15;letter-spacing:.02em;text-wrap:balance}
 .today .tkyu{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:4px;font-size:clamp(18px,3.6vw,24px);font-weight:700;color:var(--muted)}
 .today .tkyu .ke{background:var(--ev-bg);color:var(--ev-ink);border-radius:6px;padding:2px 10px}
@@ -235,7 +249,7 @@ body.viewer .bar h1{font-size:20px}
 .viewerfoot .spacer{flex:1}
 #printBtn{font-size:18px;padding:12px 24px}
 #weekList{display:none;gap:12px}
-.wl-range{margin:0;font-weight:700;font-size:17px}
+.wl-range{display:none}   /* 週の範囲は上の ◀ ▶ の間に出している */
 .wl-day{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .wl-day h3{margin:0;padding:8px 14px;font-size:22px;background:var(--soft);display:flex;gap:10px;align-items:center}
 .wl-day.sat h3{color:var(--sat)}.wl-day.sun h3{color:var(--sun)}
@@ -254,8 +268,6 @@ body.viewer .bar h1{font-size:20px}
 @media (max-width:760px){
   body.viewer #paneWeek .scroller{display:none}
   body.viewer #weekList{display:grid}
-  body.viewer #prevWeek,body.viewer #nextWeek,body.viewer #thisWeek{padding:8px 12px;font-size:15px}
-  body.viewer .sheettools .spacer{flex-basis:100%;height:0}
   body.viewer #printBtn{flex:1}
 }
 
@@ -374,12 +386,13 @@ footer .wrap{padding-block:0 32px}
 <body>
 <header class="bar">
   <div class="wrap">
-    <h1><button class="homebtn" type="button" id="homeBtn" title="最初の画面に戻る"><span id="barTitle">つたえる帳</span></button></h1>
+    <h1><button class="homebtn" type="button" id="homeBtn" title="最初の画面に戻る"><span class="back" aria-hidden="true">‹</span><span id="barTitle">つたえる帳</span></button><span class="barmode" id="barMode"></span></h1>
+    <!-- 予定表を選んだときだけ3つのタブを出す（メモは1画面なのでタブなし） -->
     <nav class="tabs" role="tablist" aria-label="画面の切り替え">
-      <button id="tabEdit" role="tab" aria-selected="true" aria-controls="paneEdit">予定</button>
-      <button id="tabWeek" role="tab" aria-selected="false" aria-controls="paneWeek">週の表</button>
-      <button id="tabToday" role="tab" aria-selected="false" aria-controls="paneToday">今日</button>
-      <button id="tabMemo" role="tab" aria-selected="false" aria-controls="paneMemo">メモ</button>
+      <button id="tabEdit" role="tab" aria-selected="true" aria-controls="paneEdit">入力</button>
+      <button id="tabWeek" role="tab" aria-selected="false" aria-controls="paneWeek">表・印刷</button>
+      <button id="tabToday" role="tab" aria-selected="false" aria-controls="paneToday">今日だけ</button>
+      <button id="tabMemo" role="tab" aria-selected="false" aria-controls="paneMemo" hidden>メモ</button>
     </nav>
   </div>
 </header>
@@ -468,17 +481,18 @@ footer .wrap{padding-block:0 32px}
     <!-- ===== 週の表 ===== -->
     <section id="paneWeek" role="tabpanel" aria-labelledby="tabWeek" hidden style="display:grid;gap:12px">
       <div class="sheettools">
-        <button class="btn quiet" type="button" id="prevWeek">◀ 前の週</button>
-        <button class="btn quiet" type="button" id="thisWeek">今週</button>
-        <button class="btn quiet" type="button" id="nextWeek">次の週 ▶</button>
+        <div class="stepper" role="group" aria-label="表示する週">
+          <button type="button" id="prevWeek" aria-label="前の週">◀</button>
+          <span class="range" id="weekRange" aria-live="polite"></span>
+          <button type="button" id="nextWeek" aria-label="次の週">▶</button>
+        </div>
+        <button class="btn quiet" type="button" id="thisWeek" hidden>今週に戻る</button>
         <span class="spacer"></span>
-        <label class="f" style="grid-auto-flow:column;align-items:center;gap:6px">文字
-          <select id="fSize">
-            <option value="m">標準</option>
-            <option value="l">大</option>
-            <option value="xl">特大（2段）</option>
-          </select>
-        </label>
+        <select id="fSize" aria-label="印刷の文字の大きさ">
+          <option value="m">文字：標準</option>
+          <option value="l">文字：大</option>
+          <option value="xl">文字：特大（2段）</option>
+        </select>
         <button class="btn primary" type="button" id="printBtn">印刷する</button>
       </div>
       <div id="weekList" aria-label="この週の予定"></div>
@@ -490,11 +504,12 @@ footer .wrap{padding-block:0 32px}
     <section id="paneToday" role="tabpanel" aria-labelledby="tabToday" hidden>
       <div class="today">
         <div class="tnav">
-          <button class="btn quiet" type="button" id="prevDay">◀ 前の日</button>
-          <button class="btn quiet" type="button" id="toDay">今日</button>
-          <button class="btn quiet" type="button" id="nextDay">次の日 ▶</button>
-          <span class="spacer"></span>
-          <button class="btn" type="button" id="wakeBtn">画面を消さない</button>
+          <div class="stepper" role="group" aria-label="表示する日">
+            <button type="button" id="prevDay" aria-label="前の日">◀</button>
+            <span class="range" id="dayRange" aria-live="polite"></span>
+            <button type="button" id="nextDay" aria-label="次の日">▶</button>
+          </div>
+          <button class="btn quiet" type="button" id="toDay" hidden>今日に戻る</button>
         </div>
         <div>
           <div class="bigdate" id="bigDate"></div>
@@ -503,6 +518,10 @@ footer .wrap{padding-block:0 32px}
         </div>
         <ul class="tlist" id="tlist"></ul>
         <div class="contact" id="tContact" hidden></div>
+        <div class="wakerow">
+          <button class="btn quiet" type="button" id="wakeBtn">画面を消さない</button>
+          <span>台所などにスマホを置いて見るときに</span>
+        </div>
       </div>
     </section>
 
@@ -882,6 +901,8 @@ footer .wrap{padding-block:0 32px}
     let svg=""; try{ svg=qrSvg(await qrParts(false)); }catch(e){}
     if(run!==sheetRun) return;   // 続けて呼ばれたら最後の1回だけ描く
     const s=$("#sheet"), start=weekStart(), end=addDays(start,6), todayKey=ymd(new Date());
+    $("#weekRange").textContent=md(start)+" 〜 "+md(end);
+    $("#thisWeek").hidden=ymd(start)===ymd(monday(new Date()));
     const size=$("#fSize").value; s.dataset.size=size;
     s.textContent="";
     const qr=el("div",{class:"qr"});
@@ -943,6 +964,7 @@ footer .wrap{padding-block:0 32px}
     const tk=$("#tKyu"), q=data.q?kyu(d):null; tk.hidden=!q; tk.textContent="";
     if(q){ tk.append(document.createTextNode("旧暦 "+(q.leap?"閏":"")+q.m+"月"+q.d+"日")); for(const x of kyuEvents(d)) tk.append(el("span",{class:"ke",text:x})); }
     const rel=dayOffset===0?"今日":dayOffset===1?"明日":dayOffset===-1?"昨日":"";
+    $("#dayRange").textContent=(rel||md(d))+"（"+WD[i]+"）"; $("#toDay").hidden=dayOffset===0;
     $("#clock").textContent=(rel?rel+"　":"")+(dayOffset===0?"現在 "+now.getHours()+":"+pad(now.getMinutes()):"");
     const list=itemsOn(d), ul=$("#tlist"); ul.textContent="";
     const nowM=now.getHours()*60+now.getMinutes();
@@ -975,6 +997,9 @@ footer .wrap{padding-block:0 32px}
   // ---------- タブ ----------
   function show(which){
     document.body.classList.remove("start"); $("#paneStart").hidden=true;
+    const isMemo=which==="Memo";
+    document.body.classList.toggle("mode-memo",isMemo); document.body.classList.toggle("mode-yotei",!isMemo);
+    $("#barMode").textContent=isMemo?"メモ":"予定表";
     for(const [t,p] of [["#tabEdit","#paneEdit"],["#tabWeek","#paneWeek"],["#tabToday","#paneToday"],["#tabMemo","#paneMemo"]]){
       const on=t==="#tab"+which; $(t).setAttribute("aria-selected",String(on)); $(p).hidden=!on;
     }
