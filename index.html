@@ -248,23 +248,25 @@ body.viewer .bar h1{font-size:20px}
 .viewerfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:14px}
 .viewerfoot .spacer{flex:1}
 #printBtn{font-size:18px;padding:12px 24px}
-#weekList{display:none;gap:12px}
+#weekList{display:none;gap:12px;--ls:1}
+#weekList[data-size="l"]{--ls:1.25}
+#weekList[data-size="xl"]{--ls:1.5}
 .wl-range{display:none}   /* 週の範囲は上の ◀ ▶ の間に出している */
 .wl-day{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.wl-day h3{margin:0;padding:8px 14px;font-size:22px;background:var(--soft);display:flex;gap:10px;align-items:center}
+.wl-day h3{margin:0;padding:8px 14px;font-size:calc(22px*var(--ls));background:var(--soft);display:flex;gap:10px;align-items:center}
 .wl-day.sat h3{color:var(--sat)}.wl-day.sun h3{color:var(--sun)}
 .wl-day.is-today{border:3px solid var(--accent)}
-.wl-kyu{font-size:14px;color:var(--muted);font-weight:700}
-.wl-ev{margin:0;padding:6px 14px;background:var(--ev-bg);color:var(--ev-ink);font-weight:700;font-size:16px}
+.wl-kyu{font-size:calc(14px*var(--ls));color:var(--muted);font-weight:700}
+.wl-ev{margin:0;padding:6px 14px;background:var(--ev-bg);color:var(--ev-ink);font-weight:700;font-size:calc(16px*var(--ls))}
 .wl-today{font-size:14px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 10px;letter-spacing:.1em}
 .wl-day ul{list-style:none;margin:0;padding:10px 12px;display:grid;gap:10px}
 .wl-day li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 14px;align-items:baseline;border-left:6px solid var(--kc);padding:2px 10px}
-.wl-day .t{font-size:22px;font-weight:700;min-width:3.2em;font-variant-numeric:tabular-nums;line-height:1.2}
-.wl-day .x{font-size:20px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
-.wl-day .k{display:block;font-size:13px;color:var(--kc);font-weight:700}
-.wl-none{margin:0;padding:10px 14px;color:var(--muted);font-size:17px}
-.wl-contact{background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-size:20px;font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}
-.wl-contact small{display:block;font-size:14px;color:var(--muted)}
+.wl-day .t{font-size:calc(22px*var(--ls));font-weight:700;min-width:3.2em;font-variant-numeric:tabular-nums;line-height:1.2}
+.wl-day .x{font-size:calc(20px*var(--ls));font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.wl-day .k{display:block;font-size:calc(13px*var(--ls));color:var(--kc);font-weight:700}
+.wl-none{margin:0;padding:10px 14px;color:var(--muted);font-size:calc(17px*var(--ls))}
+.wl-contact{background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-size:calc(20px*var(--ls));font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}
+.wl-contact small{display:block;font-size:calc(14px*var(--ls));color:var(--muted)}
 @media (max-width:760px){
   body.viewer #paneWeek .scroller{display:none}
   body.viewer #weekList{display:grid}
@@ -491,7 +493,7 @@ footer .wrap{padding-block:0 32px}
         <select id="fSize" aria-label="印刷の文字の大きさ">
           <option value="m">文字：標準</option>
           <option value="l">文字：大</option>
-          <option value="xl">文字：特大（2段）</option>
+          <option value="xl">文字：特大</option>
         </select>
         <button class="btn primary" type="button" id="printBtn">印刷する</button>
       </div>
@@ -873,7 +875,7 @@ footer .wrap{padding-block:0 32px}
   let sheetRun=0;
   // スマホで見るとき用：曜日ごとの縦の一覧（印刷には使わない）
   function renderWeekList(){
-    const box=$("#weekList"); box.textContent="";
+    const box=$("#weekList"); box.textContent=""; box.dataset.size=$("#fSize").value;
     const start=weekStart(), todayKey=ymd(new Date());
     box.append(el("p",{class:"wl-range",text:start.getFullYear()+"年 "+md(start)+"（月）〜 "+md(addDays(start,6))+"（日）"}));
     for(let i=0;i<7;i++){
