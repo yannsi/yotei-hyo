@@ -145,11 +145,12 @@ textarea{resize:vertical}
 .sheet[data-size="xl"]{--s:1.4}
 .sheet.measure{padding:0!important;min-width:0!important;box-shadow:none}
 .sheet.measure .day{min-height:0!important}
-.sheet .head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end}
+.sheet .head{display:grid;gap:2px}
 .sheet .head h2{margin:0;font-size:calc(30px*var(--s));line-height:1.25;letter-spacing:.03em;text-wrap:balance}
 .sheet .head .range{font-size:calc(17px*var(--s));color:#444;font-weight:700}
 .sheet .qr{display:flex;gap:10px;align-items:center;font-size:12px;color:#444;line-height:1.4}
 .sheet .qr span{text-align:right;max-width:8.5em;font-weight:700}
+.sheet .foot .qr{padding-left:12px;border-left:1px solid #bbb}
 .sheet .qr svg{width:var(--qrw,var(--qrs,200px));height:var(--qrw,var(--qrs,200px));flex:none;display:block}
 .grid7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:2px solid #222;border-radius:4px;overflow:hidden}
 .grid7.split{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -172,9 +173,10 @@ textarea{resize:vertical}
 .day li .k{display:inline-block;font-size:calc(12px*var(--s));font-weight:700;color:var(--c);margin-right:4px}
 .day .none{color:#999;font-size:calc(14px*var(--s));padding:8px;text-align:center}
 .sheet .foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:2px solid #222;border-radius:4px;padding:8px 12px}
+.sheet .foot .fl{display:grid;gap:10px;align-content:center;min-width:0}
 .sheet .foot .c{font-size:calc(20px*var(--s));font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}
 .sheet .foot .c small{display:block;font-size:calc(13px*var(--s));color:#555;font-weight:700}
-.sheet .foot .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:#444;justify-content:flex-end}
+.sheet .foot .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:#444}
 .sheet .legend span::before{content:"";display:inline-block;width:10px;height:10px;background:var(--c);margin-right:4px;vertical-align:-1px;border-radius:2px}
 
 /* 種類の色（紙は常に白なので、紙用の色は固定） */
@@ -467,7 +469,7 @@ footer .wrap{padding-block:0 32px}
       </div>
       <div id="weekList" aria-label="この週の予定"></div>
       <div class="scroller"><div class="sheet" id="sheet" data-size="m"></div></div>
-      <p class="hint noprint" style="margin:0;color:var(--muted);font-size:14px">A4横で印刷されます。右上のQRをスマホで読むと、この予定表が開きます。<b id="fitNote"></b></p>
+      <p class="hint noprint" style="margin:0;color:var(--muted);font-size:14px">A4横で印刷されます。右下のQRをスマホで読むと、この予定表が開きます。<b id="fitNote"></b></p>
     </section>
 
     <!-- ===== 今日 ===== -->
@@ -814,11 +816,8 @@ footer .wrap{padding-block:0 32px}
     const size=$("#fSize").value; s.dataset.size=size;
     s.textContent="";
     const qr=el("div",{class:"qr"});
-    if(svg){ qr.append(el("span",{text:"スマホのカメラで読むと、この予定表が開きます"})); qr.insertAdjacentHTML("beforeend",svg); qr.style.setProperty("--qrs",crispSize(qr.lastElementChild,200)+"px"); }
-    const head=el("div",{class:"head"},[
-      el("div",{},[el("h2",{text:data.t||"予定表"}),el("div",{class:"range",text:start.getFullYear()+"年 "+md(start)+"（月）〜 "+md(end)+"（日）"})]),
-      qr
-    ]);
+    if(svg){ qr.append(el("span",{text:"スマホのカメラで読むと、この予定表が開きます"})); qr.insertAdjacentHTML("beforeend",svg); qr.style.setProperty("--qrs",crispSize(qr.lastElementChild,160)+"px"); }
+    const head=el("div",{class:"head"},[el("h2",{text:data.t||"予定表"}),el("div",{class:"range",text:start.getFullYear()+"年 "+md(start)+"（月）〜 "+md(end)+"（日）"})]);
     const grid=el("div",{class:"grid7"+(size==="xl"?" split":"")});
     for(let i=0;i<7;i++){
       const d=addDays(start,i), list=itemsOn(d);
@@ -843,7 +842,8 @@ footer .wrap{padding-block:0 32px}
     const legend=el("div",{class:"legend"});
     for(const x of KINDS) legend.append(el("span",{"data-k":x.k,text:x.name}));
     const contact=el("div",{class:"c"},[el("small",{text:"困ったときの連絡先"}),document.createTextNode(data.c||"（未記入）")]);
-    const foot=el("div",{class:"foot"},[contact,size==="xl"?el("span"):legend]);
+    // QRは下の欄の右端（連絡先・凡例の横）
+    const foot=el("div",{class:"foot"},[el("div",{class:"fl"},size==="xl"?[contact]:[contact,legend]),svg?qr:el("span")]);
     s.append(head,grid,foot);
     fitToPage();
   }
