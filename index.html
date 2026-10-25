@@ -290,6 +290,8 @@ body.viewer .bar h1{font-size:20px}
   font-size:calc(clamp(16px,3.6vw,20px)*var(--s));color:var(--muted);font-weight:700}
 .memo .meta .from{color:var(--ink);font-size:calc(clamp(18px,4vw,22px)*var(--s))}
 .memo .qr{display:none}
+.qrwarn{margin:0;padding:10px 12px;border-radius:8px;background:var(--hi);border-left:6px solid var(--hi-line);color:var(--ink);font-size:14px;line-height:1.6}
+.share .qrwarn{grid-column:1/-1}
 .memo .empty{color:var(--muted)}
 
 /* ---- メモを見る（送られてきたリンク） ---- */
@@ -312,9 +314,9 @@ body.viewer .bar h1{font-size:20px}
 .printsim .memo .meta{font-size:calc(13pt*var(--s))}
 .printsim .memo .meta .from{font-size:calc(16pt*var(--s))}
 .printsim .memo .qr{display:flex;position:absolute;top:8mm;right:8mm}
-.printsim .memo .qr svg{width:26mm;height:26mm}
-.printsim .memo.hasqr{--qrpad:44mm}
-.printsim .memo.hasqr .to{min-height:26mm}
+.printsim .memo .qr svg{width:calc(var(--qrmm,26mm) / var(--fit,1));height:calc(var(--qrmm,26mm) / var(--fit,1))}
+.printsim .memo.hasqr{--qrpad:calc((var(--qrmm,26mm) + 18mm) / var(--fit,1))}
+.printsim .memo.hasqr .to{min-height:calc(var(--qrmm,26mm) / var(--fit,1))}
 
 footer{color:var(--muted);font-size:13px}
 footer .wrap{padding-block:0 32px}
@@ -351,11 +353,12 @@ footer .wrap{padding-block:0 32px}
   .memo .checks h3{font-size:calc(13pt*var(--s))}
   .memo .meta{font-size:calc(13pt*var(--s))}
   .memo .meta .from{font-size:calc(16pt*var(--s))}
-  .memo .qr{display:flex;position:absolute;top:8mm;right:8mm;gap:6px;align-items:center;font-size:8pt;color:#444;font-weight:700;line-height:1.35}
+  /* QRの大きさは --qrmm（マスが細かいほど大きく）。長いメモで全体を縮めても（--fit）、QRと横の説明は元の大きさのまま */
+  .memo .qr{display:flex;position:absolute;top:calc(8mm / var(--fit,1));right:calc(8mm / var(--fit,1));gap:6px;align-items:center;font-size:calc(8pt / var(--fit,1));color:#444;font-weight:700;line-height:1.35}
   .memo .qr span{max-width:9em;text-align:right}
-  .memo .qr svg{width:26mm;height:26mm;display:block}
-  .memo.hasqr{--qrpad:44mm}
-  .memo.hasqr .to{min-height:26mm}
+  .memo .qr svg{width:calc(var(--qrmm,26mm) / var(--fit,1));height:calc(var(--qrmm,26mm) / var(--fit,1));display:block}
+  .memo.hasqr{--qrpad:calc((var(--qrmm,26mm) + 18mm) / var(--fit,1))}
+  .memo.hasqr .to{min-height:calc(var(--qrmm,26mm) / var(--fit,1))}
 }
 @media (prefers-reduced-motion:no-preference){.tabs button,.btn,.days button{transition:background .15s,color .15s}}
 </style>
@@ -518,6 +521,7 @@ footer .wrap{padding-block:0 32px}
             </label>
             <div style="display:grid;gap:8px">
               <span style="font-size:14px;color:var(--muted);font-weight:700">確認事項・持ち物（受け取った人がチェックできます）</span>
+              <span style="font-size:13px;color:var(--muted)">付けたチェックは、受け取った人のスマホの中にだけ残ります。送った側には届きません。</span>
               <div class="checkrows" id="mChecks"></div>
               <div class="actions"><button class="btn" type="button" id="mAddCheck">＋ 項目を追加</button></div>
             </div>
@@ -532,6 +536,7 @@ footer .wrap{padding-block:0 32px}
               <span style="flex:1"></span>
               <button class="btn quiet" type="button" id="mClearAll">すべて消す</button>
             </div>
+            <p class="qrwarn" id="mQrHint" role="status" hidden></p>
           </div>
 
           <div class="panel">
@@ -551,6 +556,7 @@ footer .wrap{padding-block:0 32px}
                 <div class="status" id="mShareStatus" role="status"></div>
               </div>
               <div class="qrbox"><div id="mQr"></div><span>スマホのカメラで読むと<br>このメモが開きます</span></div>
+              <p class="qrwarn" id="mQrWarn" hidden>メモが長いので、QRの模様が細かく、読み取りにくくなっています。リンクで送るのがおすすめです。印刷した紙にはQRを付けません。</p>
             </div>
           </div>
         </div>
@@ -693,6 +699,15 @@ footer .wrap{padding-block:0 32px}
       }catch(e){}
     }
     return "";
+  }
+
+  // 印刷したメモのQRの大きさ（mm）。1マスを0.33mm以上にすると、ふつうのスマホで読み取れる。
+  // 26mmで足りなければ40mmまで大きくし、それでも細かすぎるときは 0（＝紙にはQRを付けない）
+  const MEMO_QR_MIN=26, MEMO_QR_MAX=40, QR_CELL_MM=0.33;
+  function memoQrMm(svg){
+    const n=+((svg||"").match(/data-n="(\d+)"/)||[])[1]; if(!n) return 0;
+    const need=n*QR_CELL_MM;
+    return need<=MEMO_QR_MIN?MEMO_QR_MIN:need<=MEMO_QR_MAX?Math.ceil(need):0;
   }
 
   // 画面に出すQRは、1マスが画面のちょうど整数個の点になる大きさにする（半端だとマスの幅がばらついて読みにくい）
@@ -1032,8 +1047,9 @@ footer .wrap{padding-block:0 32px}
   function saveChecks(a){ try{ localStorage.setItem("tsutaerucho-check:"+memoKey,JSON.stringify(a)); }catch(e){} }
 
   // メモ1枚を描く（見本・受け取った人の画面・印刷で共通）
-  function memoCard(o,{interactive=false,size=o.s,qr=""}={}){
+  function memoCard(o,{interactive=false,size=o.s,qr="",qrmm=0}={}){
     const card=el("article",{class:"memo"+(qr?" hasqr":""),"data-size":size});
+    if(qrmm) card.style.setProperty("--qrmm",qrmm+"mm");
     if(qr){ const q=el("div",{class:"qr"},[el("span",{text:"スマホのカメラで読むと、このメモが開きます"})]); q.insertAdjacentHTML("beforeend",qr); card.append(q); }
     card.append(el("p",{class:"to",text:o.to?o.to+"へ":"メモ"}));
     const items=o.c.map(x=>x.trim()).filter(Boolean);
@@ -1095,8 +1111,10 @@ footer .wrap{padding-block:0 32px}
     memo.d=ymd(new Date()); saveMemoDraft(); renderMemoPreview();
     const url=await memoUrl();
     $("#mShareUrl").value=url;
-    $("#mQr").innerHTML=qrSvg(await memoQrParts(),"このメモを開くQRコード")||"<p>長いのでQRに入りません。リンクで送ってください。</p>";
+    const qs=qrSvg(await memoQrParts(),"このメモを開くQRコード");
+    $("#mQr").innerHTML=qs||"<p>長いのでQRに入りません。リンクで送ってください。</p>";
     const sq=$("#mQr svg"); if(sq){ const w=crispSize(sq,180); sq.style.width=w+"px"; sq.style.height=w+"px"; }
+    $("#mQrWarn").hidden=!qs||!!memoQrMm(qs);
     $("#mShareBox").hidden=false; $("#mShareStatus").textContent="リンクができました";
     $("#mShareLink").hidden=!navigator.share;
   };
@@ -1113,8 +1131,13 @@ footer .wrap{padding-block:0 32px}
     const run=++memoViewRun;
     let qr=""; try{ qr=qrSvg(await memoQrParts(),"このメモを開くQRコード"); }catch(e){}
     if(run!==memoViewRun) return;
+    // 細かすぎて紙から読み取れないQRは、印刷に付けない
+    const qrmm=memoQrMm(qr), dense=!qrmm;
+    if(dense) qr="";
+    const hint=$("#mQrHint");
+    if(hint){ hint.hidden=!dense; hint.textContent=dense?"メモが長くなったので、印刷した紙にはQRを付けません（QRの模様が細かすぎて読み取りにくいため）。リンクで送ることはできます。":""; }
     const v=$("#mvCard"); v.textContent="";
-    v.append(memoCard(memo,{interactive:memoViewer,size:memoViewer?$("#mvSize").value:memo.s,qr}));
+    v.append(memoCard(memo,{interactive:memoViewer,size:memoViewer?$("#mvSize").value:memo.s,qr,qrmm}));
     memoFit();
   }
   // 書いている間も、印刷用の1枚を裏で用意しておく（Ctrl+P で印刷されても中身が合うように）
@@ -1125,7 +1148,7 @@ footer .wrap{padding-block:0 32px}
     const sim=el("div",{class:"printsim","aria-hidden":"true"},[card.cloneNode(true)]);
     document.body.append(sim);
     // 縮めると1行に入る字が増えて高さも減るので、実際の幅で測りながら倍率を探す
-    const heightAt=z=>{ sim.style.width=(687/z)+"px"; return sim.firstElementChild.offsetHeight*z; };
+    const heightAt=z=>{ sim.style.width=(687/z)+"px"; sim.firstElementChild.style.setProperty("--fit",z); return sim.firstElementChild.offsetHeight*z; };
     let z=1;
     if(heightAt(1)>1000){ let lo=0.35,hi=1; for(let i=0;i<9;i++){ const m=(lo+hi)/2; if(heightAt(m)<=1000) lo=m; else hi=m; } z=lo; }
     sim.remove();
