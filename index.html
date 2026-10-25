@@ -6,6 +6,15 @@
 <title>予定表メーカー</title>
 <meta name="description" content="大きな字の週間予定表を作って印刷したり、リンクで家族に送ったりできます。データはリンクの中だけに入り、どこにも保存されません。">
 <meta name="theme-color" content="#1d5a6e">
+<!-- LINEなどでリンクを送ったときのカード。予定は「#」より後ろにあるのでカードには出ない（どの予定表でも同じカード） -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="予定表">
+<meta property="og:description" content="開くと、1週間の予定が大きな字で見られます。そのまま印刷もできます。">
+<meta property="og:image" content="https://yannsi.github.io/yotei-hyo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="予定表">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -722,12 +731,18 @@ footer .wrap{padding-block:0 32px}
     try{ history.replaceState(null,"",url); }catch(e){}
     linkDirty=false;
   };
+  // 送るときにリンクの上に付ける名前：「予定表：〇〇さんの予定」（名前に「予定表」が入っていればそのまま）
+  function shareLabel(){
+    const t=(data.t||"").trim();
+    return !t?"予定表":t.includes("予定表")?t:"予定表："+t;
+  }
+  const shareText=()=>shareLabel()+"\n"+$("#shareUrl").value;
   $("#copyLink").onclick=async()=>{
     const t=$("#shareUrl");
-    try{ await navigator.clipboard.writeText(t.value); $("#shareStatus").textContent="コピーしました。LINEやメールに貼りつけて送れます"; }
+    try{ await navigator.clipboard.writeText(shareText()); $("#shareStatus").textContent="「"+shareLabel()+"」という名前を付けてコピーしました。LINEやメールに貼りつけて送れます"; }
     catch(e){ t.focus(); t.select(); $("#shareStatus").textContent="選択しました。長押しか Ctrl+C でコピーしてください"; }
   };
-  $("#shareLink").onclick=async()=>{ try{ await navigator.share({title:data.t||"予定表",url:$("#shareUrl").value}); }catch(e){} };
+  $("#shareLink").onclick=async()=>{ try{ await navigator.share({title:shareLabel(),text:shareText()}); }catch(e){} };
   const doPrint=async()=>{ show("Week"); await renderSheet(); setTimeout(()=>window.print(),50); };
   $("#goPrint").onclick=doPrint; $("#printBtn").onclick=doPrint;
   $("#fSize").onchange=()=>{ try{localStorage.setItem("yoteihyo-size",$("#fSize").value);}catch(e){} renderSheet(); };
