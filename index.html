@@ -403,6 +403,7 @@ footer .wrap{padding-block:0 32px}
   <div class="wrap">
     <!-- ===== 最初の画面：何を作るか ===== -->
     <section id="paneStart" hidden>
+      <div class="note" id="brokenNote" role="alert" hidden>このリンクは途中で切れているか、こわれていて開けませんでした。送ってくれた人に、もう一度送ってもらってください。</div>
       <h2 class="start-q">何を作りますか？</h2>
       <div class="start-grid">
         <button class="start-card" type="button" id="startYotei">
@@ -695,9 +696,16 @@ footer .wrap{padding-block:0 32px}
   // 時刻の並べ順：「10:00」「9時半」「朝」などを分に直す
   const WORDS = [["早朝",360],["朝",420],["午前",540],["昼",720],["午後",840],["夕方",1020],["夕",1020],["夜",1200],["寝る前",1290]];
   function minutes(t){
-    t=(t||"").trim().replace(/[０-９：]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
-    let m=/^(\d{1,2})[:時](\d{1,2})?/.exec(t);
-    if(m){let h=+m[1],mi=m[2]?+m[2]:(/半/.test(t)?30:0);if(/午後|夕|夜/.test(t)&&h<12)h+=12;return h*60+mi;}
+    t=(t||"").trim().replace(/[０-９：Ａ-Ｚａ-ｚ．]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+    // 数字は言葉の後ろにあってもよい（「午後3時」「夜7時半」「PM3:00」）
+    let m=/(\d{1,2})\s*[:時]\s*(\d{1,2})?/.exec(t);
+    if(m){
+      let h=+m[1],mi=m[2]?+m[2]:(/半/.test(t)?30:0);
+      if(/午後|夕|夜|p\.?m/i.test(t)&&h<12)h+=12;
+      else if(/夜/.test(t)&&h===12)h=24;                 // 夜12時は一日の終わり
+      else if(/午前|a\.?m/i.test(t)&&h===12)h=0;
+      return Math.min(h*60+mi,1499);
+    }
     for(const [w,v] of WORDS) if(t.includes(w)) return v;
     return t?1500:-1;   // 時刻なしは一番上、読めない言葉は一番下
   }
@@ -1280,10 +1288,10 @@ footer .wrap{padding-block:0 32px}
   // ---------- はじまり ----------
   (async()=>{
     try{ const s=localStorage.getItem("yoteihyo-size"); if(s) $("#fSize").value=s; }catch(e){}
-    const hp=hashParams();
+    const hp=hashParams(); let broken=false;
     if(hp.p){
       try{ data=clean(await unpack(hp.p)); $("#sharedNote").hidden=false; $("#fOpenToday").checked=hp.view==="today"; }
-      catch(e){ data=null; }
+      catch(e){ data=null; broken=true; }
     }
     if(!data) data=loadDraft();
     if(!data) data=clean({});   // はじめはまっさら（例は出さない）
@@ -1291,12 +1299,12 @@ footer .wrap{padding-block:0 32px}
     // メモ：送られてきたメモがあればそれ、なければ下書き、それもなければまっさら
     const mp=new URLSearchParams(location.hash.slice(1)).get("m");
     let memoFromLink=false;
-    if(mp){ try{ memo=memoClean(await unpack(mp)); memoKey=hashStr(JSON.stringify(memo)); memoFromLink=true; }catch(e){ memo=null; } }
+    if(mp){ try{ memo=memoClean(await unpack(mp)); memoKey=hashStr(JSON.stringify(memo)); memoFromLink=true; }catch(e){ memo=null; broken=true; } }
     if(!memo) memo=loadMemoDraft();
     if(!memo) memo=memoClean({});
     fillMemoForm(); renderMemoPreview();
     if(memoFromLink){ enterMemoViewer(); return; }
-    if(hp.p && !$("#sharedNote").hidden){ enterViewer(); show(hp.view==="today"?"Today":"Week"); } else showStart();
+    if(hp.p && !$("#sharedNote").hidden){ enterViewer(); show(hp.view==="today"?"Today":"Week"); } else { showStart(); $("#brokenNote").hidden=!broken; }
   })();
 
   if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
